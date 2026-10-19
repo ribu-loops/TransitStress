@@ -1,0 +1,106 @@
+# Draft settings; the builder validates this against docs/SCIENCE.md.
+# Actual product manifest and per-star grids are generated before G2.
+schema_version = 1
+protocol_id = "transitstress-v1"
+frozen = false
+master_seed = 20261019
+
+[data]
+mission = "TESS"
+sector = 1
+author = "SPOC"
+exposure_seconds = 120
+flux_column = "pdcsap_flux"
+quality_bitmask = "default"
+development_stars = 2
+evaluation_stars = 5
+minimum_baseline_days = 24.0
+minimum_raw_points = 8000
+minimum_binned_points = 2000
+maximum_candidate_downloads = 30
+
+[sanity]
+tic_id = "261136679"
+sector = 1
+reference_period_days_approx = 6.27
+
+[preparation]
+bin_minutes = 10.0
+bin_boundary_snap_tolerance = 1e-8
+bin_aggregation = "inverse_variance_weighted"
+inject_after_binning = true
+interpolate_missing = false
+post_injection_sigma_clip = false
+
+[injection]
+model = "additive_box"
+depths_ppm = [250.0, 750.0, 2250.0]
+duration_hours = 3.0
+
+[[injection.families]]
+id = "F1"
+period_days = 1.73
+epoch_fraction = 0.17
+
+[[injection.families]]
+id = "F2"
+period_days = 3.41
+epoch_fraction = 0.43
+
+[[injection.families]]
+id = "F3"
+period_days = 6.83
+epoch_fraction = 0.71
+
+[masks]
+names = ["original", "random_missing", "central_block"]
+random_removed_fraction = 0.20
+block_start_fraction = 0.40
+block_end_fraction = 0.60
+
+[detrending]
+method = "centered_time_rolling_median"
+window_days = [0.5, 1.5]
+minimum_neighbors = 5
+segment_gap_days = 0.5
+include_window_endpoints = true
+normalize_output_again = false
+
+[search]
+minimum_period_days = 0.75
+maximum_period_days = 10.0
+duration_hours = [1.0, 2.0, 3.0, 4.0, 6.0]
+objective = "likelihood"
+method = "fast"
+oversample = 10
+frequency_factor = 1.0
+reuse_original_grid_across_masks = true
+
+[evaluation]
+relative_period_tolerance = 0.01
+maximum_center_error_duration_fraction = 0.5
+minimum_points_per_observed_transit = 3
+minimum_observed_transits = 2
+minimum_total_in_transit_points = 6
+minimum_retention_in_points = 3
+minimum_retention_out_points = 3
+
+[controls]
+include_uninjected_real = true
+gaussian_replicates_per_star_mask = 3
+gaussian_sigma_source = "median_prepared_flux_uncertainty"
+
+[execution]
+workers = 1
+resume_only_matching_run_identity = true
+allow_network_during_analysis = false
+
+# Resource safety budgets; no user-input or UI override.
+[limits]
+maximum_csv_bytes = 5242880
+maximum_csv_rows = 50000
+maximum_csv_baseline_days = 40.0
+maximum_period_samples = 50000
+maximum_result_rows = 1000
+maximum_archive_product_bytes = 52428800
+maximum_acquisition_bytes = 1073741824

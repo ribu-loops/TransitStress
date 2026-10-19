@@ -1,0 +1,40 @@
+# Environment and generated local state
+.venv/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Full runs, original source files and local uploads
+runs/
+data/raw/
+data/downloads/
+*.fits
+*.fits.gz
+local_uploads/
+private_notes/
+
+# Credentials and workstation-specific state
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+.secrets/
+security_reports/
+*.pem
+*.key
+id_rsa
+id_ed25519
+*client_secret*.json
+.aws/
+.ssh/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
