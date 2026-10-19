@@ -1,4 +1,4 @@
-"""Small offline environment and protocol-validation CLI."""
+"""Explicit acquisition and offline environment/protocol checks."""
 
 import argparse
 import importlib.metadata
@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 
 from transitstress import __version__
-from transitstress.config import ConfigurationError, app_mode, load_config
+from transitstress.config import app_mode, load_config
+from transitstress.errors import TransitStressError
 
 DEPENDENCIES = ("numpy", "pandas", "astropy", "lightkurve", "plotly", "streamlit")
 
@@ -28,7 +29,9 @@ def doctor(config_path: Path) -> dict[str, object]:
         "manifest_available": Path("data/manifest.json").is_file(),
         "demo_available": Path("demo").is_dir(),
         "cache_available": Path(".cache/transitstress").is_dir(),
-        "science": "not implemented; no data downloaded or results produced by doctor",
+        "science": (
+            "T01 contracts and T02 input preparation; doctor performs no acquisition or search"
+        ),
     }
 
 
@@ -37,11 +40,31 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("doctor", help="Check local setup without network access")
     check.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
+    acquire = commands.add_parser(
+        "fetch", help="Explicit MAST acquisition or pinned cache verification"
+    )
+    acquire.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
+    acquire.add_argument(
+        "--offline", action="store_true", help="Verify existing cache; never contact MAST"
+    )
     args = parser.parse_args(argv)
     try:
+        if args.command == "fetch":
+            from transitstress.acquisition import fetch, write_selection_csv
+            from transitstress.archive import MastArchive
+
+            report = fetch(
+                load_config(args.config),
+                data_root=Path("data"),
+                cache_root=Path(".cache/transitstress"),
+                archive=MastArchive(offline=args.offline),
+            )
+            write_selection_csv(Path("data"))
+            print(json.dumps(report, indent=2, allow_nan=False))
+            return 0
         report = doctor(args.config)
-    except (ConfigurationError, importlib.metadata.PackageNotFoundError) as error:
-        print(f"doctor: {error}", file=sys.stderr)
+    except (TransitStressError, importlib.metadata.PackageNotFoundError) as error:
+        print(f"{args.command}: {error}", file=sys.stderr)
         return 2
     print(json.dumps(report, indent=2, allow_nan=False))
     return 0 if report["python_supported"] else 1
