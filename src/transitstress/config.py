@@ -61,6 +61,13 @@ class DataConfig(_ProtocolSection):
 
 
 @dataclass(frozen=True)
+class SelectionConfig(_ProtocolSection):
+    strategy: str = "exact_product_cohort"
+    cohort_id: str = "t02-exact-products-v1"
+    cohort_sha256: str = "fdc28a9dc8e9652624ce1d09395bbe0392dd4b5c4d4aaf8ce99a9e503a240199"
+
+
+@dataclass(frozen=True)
 class SanityConfig(_ProtocolSection):
     tic_id: str = "261136679"
     sector: int = 1
@@ -182,6 +189,7 @@ class ProtocolConfig:
     frozen: bool
     master_seed: int
     data: DataConfig
+    selection: SelectionConfig
     sanity: SanityConfig
     preparation: PreparationConfig
     injection: InjectionConfig
@@ -196,9 +204,9 @@ class ProtocolConfig:
     def __post_init__(self) -> None:
         for field in fields(self):
             _typed(getattr(self, field.name), get_type_hints(type(self))[field.name], field.name)
-        if self.schema_version != 1 or self.protocol_id != "transitstress-v1":
+        if self.schema_version != 2 or self.protocol_id != "transitstress-v1-cohort1":
             raise ConfigurationError(
-                "protocol identity: unsupported; use schema 1/transitstress-v1"
+                "protocol identity: unsupported; use schema 2/transitstress-v1-cohort1"
             )
         if not 0 <= self.master_seed < 2**64:
             raise ConfigurationError("master_seed: out of range; use an unsigned 64-bit integer")

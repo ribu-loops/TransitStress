@@ -1,4 +1,8 @@
-"""Offline fixture products exercise the real selection/cache/QC orchestration."""
+"""Historical inventory runner regressions, plus unchanged shared product/QC checks.
+
+Public fetch now uses the exact cohort; test_t02_cohort exercises that route.
+The private legacy runner is retained to preserve earlier regression evidence.
+"""
 
 import copy
 from dataclasses import replace
@@ -7,11 +11,13 @@ from pathlib import Path
 import pytest
 
 from transitstress.acquisition import (
+    _fetch_inventory_legacy as fetch,
+)
+from transitstress.acquisition import (
     acquire_inventory,
     cache_name,
     candidate_inventory,
     choose_product,
-    fetch,
     read_json,
     reconcile_processing,
     require_final_manifest,
@@ -59,7 +65,12 @@ def product(tic, size, group=None, configuration="0120", version="spoc-5.0.0-tes
 
 
 @pytest.fixture
-def scenario(tess_factory):
+def scenario(tess_factory, monkeypatch):
+    # These historical runner fixtures predate cohort identity. Public validation
+    # always enforces the cohort; retain the original shared field checks here.
+    from transitstress.acquisition import _validate_manifest_fields
+
+    monkeypatch.setattr("transitstress.acquisition.validate_manifest", _validate_manifest_fields)
     config = load_config(Path("configs/protocol_v1.toml"))
     # TIC 1 fails the 24-day criterion; seven later TICs pass. TIC 10 would be next.
     tics = [10, 8, 1, 3, SANITY, 2, 7, 6, 5, 4]

@@ -62,6 +62,8 @@ def input_settings_hash(config: ProtocolConfig) -> str:
     """Acquisition settings only; later G2 freeze/seed/search changes are not reselection."""
     return canonical_hash(
         {
+            "protocol_id": config.protocol_id,
+            "selection": config.selection,
             "data": config.data,
             "sanity": config.sanity,
             "preparation": config.preparation,
@@ -102,7 +104,10 @@ def atomic_write(root: Path, name: str, content: bytes) -> None:
 
 
 def write_json(root: Path, name: str, value: object) -> None:
-    atomic_write(root, name, canonical_json(value) + b"\n")
+    content = canonical_json(value) + b"\n"
+    if len(content) > MAX_METADATA:
+        raise DataValidationError("acquisition JSON: over 16 MiB; preserve previous checkpoint")
+    atomic_write(root, name, content)
 
 
 def read_json(root: Path, name: str) -> dict:
@@ -444,7 +449,10 @@ def reconcile_processing(product: dict, audit: dict) -> dict:
             and audit["source_data_release"] == 42
             and re.fullmatch(r"spoc-5\.0\.[0-9]+-[0-9]{8}", fits_version)
             and product.get("selection_basis")
-            == "unique current archive LC identity; no release comparison"
+            in (
+                "unique current archive LC identity; no release comparison",
+                "exact scheduled LC identity; no release comparison",
+            )
         ):
             raise DataValidationError(
                 "processing identity: archive version differs from FITS PROCVER without "
@@ -476,6 +484,19 @@ def require_final_manifest(manifest: dict) -> None:
 
 def validate_manifest(manifest: dict, config: ProtocolConfig) -> None:
     """Validate pinned identities before any download or filesystem-cache access."""
+    from transitstress.cohort import validate_manifest_cohort
+
+    try:
+        validate_manifest_cohort(manifest, config)
+        _validate_manifest_fields(manifest, config)
+    except (KeyError, TypeError, AttributeError) as error:
+        raise DataValidationError(
+            "manifest: malformed cohort identity; restore recorded file"
+        ) from error
+
+
+def _validate_manifest_fields(manifest: dict, config: ProtocolConfig) -> None:
+    """Shared field checks; legacy runner tests use these without the amended selection."""
     try:
         if (
             manifest["schema_version"] != 1
@@ -591,6 +612,33 @@ def fetch_pinned(manifest: dict, config: ProtocolConfig, cache: Path, archive: M
 
 
 def fetch(
+    config: ProtocolConfig,
+    *,
+    data_root: Path,
+    cache_root: Path,
+    archive: MastArchive,
+    recheck_qc: bool = False,
+    rebuild_inventory: bool = False,
+    metadata_only: bool = False,
+) -> dict:
+    """The supported acquisition route is the author-approved exact cohort only."""
+    from transitstress.cohort import fetch_cohort
+
+    if rebuild_inventory:
+        raise DataValidationError(
+            "inventory rebuild: retired for cohort protocol; preserve rejected evidence"
+        )
+    return fetch_cohort(
+        config,
+        data_root=data_root,
+        cache_root=cache_root,
+        archive=archive,
+        recheck_qc=recheck_qc,
+        metadata_only=metadata_only,
+    )
+
+
+def _fetch_inventory_legacy(
     config: ProtocolConfig,
     *,
     data_root: Path,
@@ -931,7 +979,12 @@ def fetch(
 
 def write_selection_csv(data_root: Path) -> None:
     """Controlled identifiers/statuses and numeric QC only; arbitrary archive text stays in JSON."""
-    state = read_json(data_root, "acquisition.json")
+    name = (
+        "cohort_acquisition.json"
+        if safe_file(data_root, "cohort_acquisition.json").exists()
+        else "acquisition.json"
+    )
+    state = read_json(data_root, name)
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer)
     writer.writerow(

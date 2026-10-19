@@ -25,7 +25,8 @@ def doctor(config_path: Path) -> dict[str, object]:
         "mode": app_mode(),
         "dependencies": {name: importlib.metadata.version(name) for name in DEPENDENCIES},
         "protocol_id": config.protocol_id,
-        "validation": "complete protocol-v1 configuration validation (T01)",
+        "validation": "schema 2 / protocol-v1-cohort1 configuration validation",
+        "cohort_hash": config.selection.cohort_sha256,
         "manifest_available": Path("data/manifest.json").is_file(),
         "demo_available": Path("demo").is_dir(),
         "cache_available": Path(".cache/transitstress").is_dir(),
@@ -47,12 +48,12 @@ def main(argv: list[str] | None = None) -> int:
     acquire.add_argument(
         "--metadata-only",
         action="store_true",
-        help="Verify a complete observation inventory and stop before product acquisition",
+        help="Verify exact scheduled product metadata; stop before source downloads",
     )
     acquire.add_argument(
         "--rebuild-inventory",
         action="store_true",
-        help="Repair a proven incomplete inventory before a manifest, preserving evidence and caps",
+        help="Retired: cohort mode refuses sector inventory rebuilds",
     )
     acquire.add_argument(
         "--offline", action="store_true", help="Verify existing cache; never contact MAST"

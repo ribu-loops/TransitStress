@@ -1,9 +1,14 @@
 # Draft settings; the builder validates this against docs/SCIENCE.md.
 # Actual product manifest and per-star grids are generated before G2.
-schema_version = 1
-protocol_id = "transitstress-v1"
+schema_version = 2
+protocol_id = "transitstress-v1-cohort1"
 frozen = false
 master_seed = 20261019
+
+[selection]
+strategy = "exact_product_cohort"
+cohort_id = "t02-exact-products-v1"
+cohort_sha256 = "fdc28a9dc8e9652624ce1d09395bbe0392dd4b5c4d4aaf8ce99a9e503a240199"
 
 [data]
 mission = "TESS"

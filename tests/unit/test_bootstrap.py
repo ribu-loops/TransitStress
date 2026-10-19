@@ -16,7 +16,7 @@ def test_locked_runtime_imports():
 
 def test_protocol_smoke():
     config = load_config(PROTOCOL)
-    assert config.protocol_id == "transitstress-v1"
+    assert config.protocol_id == "transitstress-v1-cohort1"
     assert (config.minimum_period_days, config.maximum_period_days) == (0.75, 10.0)
 
 
@@ -26,7 +26,7 @@ def test_protocol_smoke():
         ("minimum_period_days = 0.75", "minimum_period_days = 12.0"),
         ("frequency_factor = 1.0", "frequency_factor = nan"),
         ("workers = 1", "workers = true"),
-        ("schema_version = 1", "schema_version = 1\nunknown = 5"),
+        ("schema_version = 2", "schema_version = 2\nunknown = 5"),
     ],
 )
 def test_invalid_config(tmp_path, old, new):
