@@ -45,7 +45,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     acquire.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
     acquire.add_argument(
+        "--metadata-only",
+        action="store_true",
+        help="Verify a complete observation inventory and stop before product acquisition",
+    )
+    acquire.add_argument(
+        "--rebuild-inventory",
+        action="store_true",
+        help="Repair a proven incomplete inventory before a manifest, preserving evidence and caps",
+    )
+    acquire.add_argument(
         "--offline", action="store_true", help="Verify existing cache; never contact MAST"
+    )
+    acquire.add_argument(
+        "--recheck-qc",
+        action="store_true",
+        help="Recheck exact cached QC failures after a preparation repair; preserve their history",
     )
     args = parser.parse_args(argv)
     try:
@@ -58,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
                 data_root=Path("data"),
                 cache_root=Path(".cache/transitstress"),
                 archive=MastArchive(offline=args.offline),
+                recheck_qc=args.recheck_qc,
+                rebuild_inventory=args.rebuild_inventory,
+                metadata_only=args.metadata_only,
             )
             write_selection_csv(Path("data"))
             print(json.dumps(report, indent=2, allow_nan=False))

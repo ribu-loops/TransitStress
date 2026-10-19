@@ -81,7 +81,7 @@ def prepare_tess(
                 )
             units = {name: table.columns[name].unit for name in required[:-1]}
             if (
-                units["TIME"] != "d"
+                units["TIME"] not in ("d", "BJD - 2457000, days")
                 or not units["PDCSAP_FLUX"]
                 or units["PDCSAP_FLUX"] != units["PDCSAP_FLUX_ERR"]
             ):
@@ -104,6 +104,13 @@ def prepare_tess(
                 )
             processing = str(primary["PROCVER"])
             source_date = primary.get("DATE")
+            source_release = primary.get("DATA_REL")
+            if source_release is not None and (
+                type(source_release) is not int or source_release <= 0
+            ):
+                raise DataValidationError(
+                    "FITS DATA_REL: malformed; resolve source release metadata"
+                )
     except (OSError, ValueError, KeyError, IndexError, TypeError) as error:
         if isinstance(error, DataValidationError):
             raise
@@ -141,6 +148,7 @@ def prepare_tess(
         "column_units": units,
         "bjd_reference": bjdref,
         "processing_version": processing,
+        "source_data_release": source_release,
         "source_creation_date": source_date,
     }
     if keep.sum() < 2:

@@ -1,8 +1,14 @@
+import io
 import json
-from urllib.parse import urlencode
+import multiprocessing
+import threading
+import time
+from types import SimpleNamespace
+from urllib.parse import urlencode, urlsplit
 
 import pytest
 
+import transitstress.archive as transport
 from transitstress.archive import (
     DOWNLOAD,
     INVOKE,
@@ -23,6 +29,10 @@ class Response:
         self.status = status
         self.headers = headers or {}
         self.content = content
+        self.closed = False
+
+    def close(self):
+        self.closed = True
 
     def getheader(self, name):
         return self.headers.get(name)
@@ -39,8 +49,9 @@ def connection_mock(monkeypatch):
     class Connection:
         sock = None
 
-        def __init__(self, address, timeout):
+        def __init__(self, address, timeout, *, host=transport.HOST):
             assert address == "130.167.201.60" and 0 < timeout <= 20
+            assert host in transport.HOSTS
 
         def request(self, method, target, body, headers):
             requests.append((method, target, body, headers))
@@ -53,8 +64,8 @@ def connection_mock(monkeypatch):
 
     monkeypatch.setattr("transitstress.archive._PinnedHTTPSConnection", Connection)
     monkeypatch.setattr(
-        "transitstress.archive.socket.getaddrinfo",
-        lambda *a, **kw: [(2, 1, 6, "", ("130.167.201.60", 443))],
+        "transitstress.archive._public_address",
+        lambda *a, **kw: "130.167.201.60",
     )
     return responses, requests
 
@@ -163,10 +174,11 @@ def test_safe_same_identity_redirect_and_redirect_cap(connection_mock):
 
 def test_private_dns_and_offline_never_request(connection_mock, monkeypatch):
     _, requests = connection_mock
-    monkeypatch.setattr(
-        "transitstress.archive.socket.getaddrinfo",
-        lambda *a, **kw: [(2, 1, 6, "", ("10.0.0.1", 443))],
-    )
+
+    def rejected(*args):
+        raise DataValidationError("archive DNS: private answer rejected")
+
+    monkeypatch.setattr("transitstress.archive._public_address", rejected)
     with pytest.raises(DataValidationError, match="DNS"):
         MastArchive().download(URI, 3)
     with pytest.raises(DataValidationError, match="offline"):
@@ -230,14 +242,24 @@ def test_paged_query(connection_mock):
             json.dumps(
                 {
                     "status": "COMPLETE",
-                    "paging": {"page": n, "pagesFiltered": 2},
+                    "paging": {
+                        "page": n,
+                        "pageSize": 1,
+                        "pagesFiltered": 2,
+                        "rows": 1,
+                        "rowsFiltered": 2,
+                        "rowsTotal": 2,
+                    },
                     "data": [{"value": n}],
                 }
             ).encode()
         )
         for n in (1, 2)
     )
-    assert MastArchive().query("Mast.Caom.Products", {"obsid": "1"}) == [{"value": 1}, {"value": 2}]
+    assert MastArchive().query("Mast.Caom.Products", {"obsid": "1"}, pagesize=1) == [
+        {"value": 1},
+        {"value": 2},
+    ]
     assert len(requests) == 2
     assert all(r[0] == "GET" and r[1].startswith("/api/v0/invoke?request=") for r in requests)
 
@@ -256,6 +278,7 @@ def test_metadata_get_query_boundary_and_redirect_identity(connection_mock):
                         "format": "json",
                         "pagesize": 1000,
                         "page": 1,
+                        "timeout": 10,
                     }
                 )
             }
@@ -276,7 +299,7 @@ def test_metadata_get_query_boundary_and_redirect_identity(connection_mock):
 @pytest.mark.parametrize(
     "result",
     [
-        {"status": "EXECUTING", "data": []},
+        {"status": "ERROR", "data": []},
         {"status": "COMPLETE", "data": [], "paging": {"page": 1, "pagesFiltered": 41}},
         {"status": "COMPLETE", "data": [None], "paging": {"page": 1, "pagesFiltered": 1}},
     ],
@@ -286,3 +309,314 @@ def test_incomplete_or_oversized_inventory(connection_mock, result):
     responses.append(Response(json.dumps(result).encode()))
     with pytest.raises(DataValidationError, match="metadata"):
         MastArchive().query("Mast.Caom.Products", {"obsid": "1"})
+
+
+def complete(data=None, **paging):
+    data = [{"obsid": 1}] if data is None else data
+    return {
+        "status": "COMPLETE",
+        "data": data,
+        "paging": {
+            "page": 1,
+            "pageSize": 1000,
+            "pagesFiltered": 1,
+            "rows": len(data),
+            "rowsFiltered": len(data),
+            "rowsTotal": len(data),
+            **paging,
+        },
+    }
+
+
+def test_poll_identical_bytes_discards_executing_data(connection_mock):
+    responses, requests = connection_mock
+    responses.extend(
+        Response(json.dumps(r).encode())
+        for r in [{"status": "EXECUTING", "data": [{"not": "complete"}]}, complete()]
+    )
+    a = MastArchive()
+    assert a.query("Mast.Caom.Filtered", {}) == [{"obsid": 1}]
+    assert len(requests) == 2 and requests[0] == requests[1]
+    assert [d["transmission"] for d in a.diagnostics] == [1, 2]
+    assert all(d["body_bytes"] > 0 for d in a.diagnostics)
+
+
+def test_poll_exhaustion_and_redirect_share_transmissions(connection_mock):
+    responses, requests = connection_mock
+    responses.extend(Response(b'{"status":"EXECUTING"}') for _ in range(3))
+    with pytest.raises(DataValidationError, match="metadata"):
+        MastArchive().query("Mast.Caom.Products", {"obsid": "1"})
+    assert len(requests) == 3
+    requests.clear()
+    url = (
+        INVOKE
+        + "?"
+        + urlencode(
+            {
+                "request": json.dumps(
+                    {
+                        "service": "Mast.Caom.Products",
+                        "params": {"obsid": "1"},
+                        "format": "json",
+                        "page": 1,
+                        "pagesize": 1000,
+                        "timeout": 10,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+            }
+        )
+    )
+    responses.extend(
+        [
+            Response(status=307, headers={"Location": url}),
+            Response(b'{"status":"EXECUTING"}'),
+            Response(json.dumps(complete()).encode()),
+        ]
+    )
+    assert MastArchive().query("Mast.Caom.Products", {"obsid": "1"}) == [{"obsid": 1}]
+    assert len(requests) == 3
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        [],
+        {},
+        {"status": "ERROR"},
+        {"status": "unknown"},
+        complete(rowsFiltered=2, rowsTotal=2),
+        complete(rows=0),
+        complete(pageSize=1),
+        complete(rowsFiltered=True),
+        complete(rowsTotal=0),
+        complete(page=2),
+        complete(pagesFiltered=2),
+        complete(rowsFiltered=40001, pagesFiltered=41),
+    ],
+)
+def test_complete_paging_counterexamples_rejected(connection_mock, result):
+    responses, _ = connection_mock
+    responses.append(Response(json.dumps(result).encode()))
+    with pytest.raises(DataValidationError, match="metadata"):
+        MastArchive().query("Mast.Caom.Filtered", {})
+
+
+def test_missing_and_changing_paging_totals(connection_mock):
+    responses, _ = connection_mock
+    result = complete()
+    del result["paging"]["rowsFiltered"]
+    responses.append(Response(json.dumps(result).encode()))
+    with pytest.raises(DataValidationError, match="metadata"):
+        MastArchive().query("Mast.Caom.Filtered", {})
+    responses.extend(
+        Response(json.dumps(r).encode())
+        for r in [
+            complete(pageSize=1, pagesFiltered=2, rowsFiltered=2, rowsTotal=2),
+            complete(page=2, pageSize=1, pagesFiltered=2, rowsFiltered=2, rowsTotal=3),
+        ]
+    )
+    with pytest.raises(DataValidationError, match="metadata"):
+        MastArchive().query("Mast.Caom.Filtered", {}, pagesize=1)
+
+
+def test_polls_share_deadline_and_empty_inventory(connection_mock, monkeypatch):
+    responses, requests = connection_mock
+    clock = [0.0]
+
+    def executing():
+        clock[0] = 179.0
+        return b'{"status":"EXECUTING"}'
+
+    first = Response()
+    first.read1 = lambda size: executing() if clock[0] == 0 else b""
+    second = Response(json.dumps(complete()).encode())
+    original = second.read1
+
+    def late(size):
+        clock[0] = 181.0
+        return original(size)
+
+    second.read1 = late
+    responses.extend([first, second])
+    monkeypatch.setattr(transport.time, "monotonic", lambda: clock[0])
+    with pytest.raises(DataValidationError, match="deadline"):
+        MastArchive().query("Mast.Caom.Filtered", {})
+    assert len(requests) == 2
+
+
+@pytest.mark.parametrize("pages", [0, 1])
+def test_empty_inventory(connection_mock, pages):
+    responses, _ = connection_mock
+    responses.append(Response(json.dumps(complete([], pagesFiltered=pages)).encode()))
+    assert MastArchive().query("Mast.Caom.Filtered", {}) == []
+
+
+@pytest.mark.parametrize("will_close", [False, True])
+@pytest.mark.parametrize("stage", ["headers", "body", "eof"])
+def test_real_http_parser_watchdog_and_cleanup_without_network(monkeypatch, will_close, stage):
+    released = threading.Event()
+    real_monotonic = time.monotonic
+    clock = [0.0]
+    # The protocol clock advances inside I/O. Host scheduling before I/O must
+    # not turn this watchdog test into a test of the pre-I/O deadline check.
+    monkeypatch.setattr(transport.time, "monotonic", lambda: clock[0])
+
+    class Reader(io.BytesIO):
+        def readline(self, *args):
+            if stage == "headers":
+                assert released.wait(2), "watchdog failed to interrupt headers"
+                clock[0] = 1.0
+                raise OSError("controlled header interruption")
+            return super().readline(*args)
+
+        def read1(self, *args):
+            assert released.wait(2), "watchdog failed to interrupt body"
+            clock[0] = 1.0
+            if stage == "body":
+                raise OSError("controlled body interruption")
+            return b""
+
+    class Socket:
+        def __init__(self):
+            self.closed = False
+            self.reader = Reader(
+                b"HTTP/1.1 200 OK\r\n"
+                + (b"Connection: close\r\n" if will_close else b"")
+                + b"Content-Length: 3\r\n\r\nabc"
+            )
+
+        def sendall(self, data):
+            pass
+
+        def settimeout(self, value):
+            pass
+
+        def makefile(self, *args):
+            return self.reader
+
+        def shutdown(self, *args):
+            released.set()
+
+        def close(self):
+            self.closed = True
+
+    sock = Socket()
+    monkeypatch.setattr(transport, "_public_address", lambda *args: "130.167.220.32")
+    monkeypatch.setattr(
+        transport._PinnedHTTPSConnection, "connect", lambda self: setattr(self, "sock", sock)
+    )
+    monkeypatch.setattr(transport, "REQUEST_SECONDS", 0.08)
+    start = real_monotonic()
+    with pytest.raises(DataValidationError, match="connection|deadline"):
+        MastArchive()._request(INVOKE, None, limit=3)
+    assert real_monotonic() - start < 1.0
+    assert released.is_set() and sock.closed
+    # For failed header parsing the parser itself closes the file object.
+    assert sock.reader.closed
+
+
+def test_dns_stalled_worker_terminated_and_joined(monkeypatch):
+    context = multiprocessing.get_context("spawn")
+    workers = []
+
+    def process(**kwargs):
+        assert kwargs["target"] is transport._dns_worker
+        worker = context.Process(target=time.sleep, args=(30,), daemon=True)
+        workers.append(worker)
+        return worker
+
+    monkeypatch.setattr(
+        transport.multiprocessing,
+        "get_context",
+        lambda method: SimpleNamespace(Pipe=context.Pipe, Process=process),
+    )
+    start = time.monotonic()
+    with pytest.raises(DataValidationError, match="DNS"):
+        transport._public_address(0.1)
+    assert time.monotonic() - start < 3
+    assert len(workers) == 1 and workers[0]._closed
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b"[]",
+        b"{}",
+        b'["10.0.0.1"]',
+        b'["not-an-ip"]',
+        b'["130.167.220.32","127.0.0.1"]',
+        b'["130.167.220.32"]',
+    ],
+)
+def test_dns_bounded_json_and_all_addresses_validated(monkeypatch, payload):
+    class Pipe:
+        def close(self):
+            pass
+
+        def poll(self, timeout):
+            return True
+
+        def recv_bytes(self, size):
+            assert size == 8192
+            return payload
+
+    class Worker:
+        def __init__(self, **kwargs):
+            assert kwargs["target"] is transport._dns_worker
+
+        def start(self):
+            pass
+
+        def is_alive(self):
+            return False
+
+        def join(self, timeout):
+            assert timeout == 1
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(
+        transport.multiprocessing,
+        "get_context",
+        lambda method: SimpleNamespace(Pipe=lambda **kwargs: (Pipe(), Pipe()), Process=Worker),
+    )
+    if payload == b'["130.167.220.32"]':
+        assert transport._public_address(1) == "130.167.220.32"
+    else:
+        with pytest.raises(DataValidationError, match="DNS"):
+            transport._public_address(1)
+
+
+def test_documented_cloud_redirect_is_exact_identity_and_counts_transmissions(connection_mock):
+    responses, requests = connection_mock
+    name = URI.split("/")[-1]
+    cloud = f"https://{transport.PRODUCT_HOST}/tess/public/tid/s0001/0000/0000/0000/0001/{name}"
+    validate_endpoint(cloud, uri=URI)
+    responses.extend([Response(status=302, headers={"Location": cloud}), Response(b"abc")])
+    archive = MastArchive()
+    assert archive.download(URI, 3) == b"abc"
+    assert len(requests) == 2 and archive.budget.downloads == 1
+    assert requests[1][1] == urlsplit(cloud).path
+    for url in (
+        cloud.replace("https:", "http:"),
+        cloud + "?other=1",
+        cloud.replace(transport.PRODUCT_HOST, transport.PRODUCT_HOST + ".evil.test"),
+        cloud.replace("/0001/", "/0002/"),
+        cloud.replace("/tess/", "/hst/"),
+        cloud.replace("/tid/", "/tid/../"),
+        cloud.replace("/s0001/", "/s0002/"),
+    ):
+        with pytest.raises(DataValidationError):
+            validate_endpoint(url, uri=URI)
+    with pytest.raises(DataValidationError):
+        validate_endpoint(f"https://{transport.PRODUCT_HOST}/api/v0/invoke")
+
+
+def test_unknown_dns_and_tls_host_rejected_without_io():
+    with pytest.raises(DataValidationError, match="host"):
+        transport._public_address(1, host="arbitrary.test")
+    with pytest.raises(DataValidationError, match="host"):
+        transport._PinnedHTTPSConnection("130.167.201.60", timeout=1, host="arbitrary.test")

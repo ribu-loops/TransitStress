@@ -1,7 +1,9 @@
+import io
 from pathlib import Path
 
 import numpy as np
 import pytest
+from astropy.io import fits
 
 from transitstress.config import load_config
 from transitstress.errors import DataValidationError
@@ -53,3 +55,24 @@ def test_duplicate_and_finite_filter(tess_factory):
         prepare_tess(tess_factory(), tic_id="2", config=config)
     curve, audit = prepare_tess(tess_factory(n=8000), tic_id="1", config=config)
     assert "retained raw baseline shorter than 24 days" in basic_qc_reasons(curve, audit, config)
+
+
+@pytest.mark.parametrize(
+    "unit", ["BJD - 2457000, days", "BJD - 2457000, seconds", "BJD - 2400000, days"]
+)
+def test_documented_btjd_label_requires_matching_explicit_day_metadata(tess_factory, unit):
+    config = load_config(Path("configs/protocol_v1.toml"))
+    with fits.open(io.BytesIO(tess_factory()), memmap=False) as hdus:
+        hdus[1].header["TUNIT1"] = unit
+        hdus[0].header["DATA_REL"] = 42
+        buffer = io.BytesIO()
+        hdus.writeto(buffer)
+    if unit != "BJD - 2457000, days":
+        with pytest.raises(DataValidationError, match="units"):
+            prepare_tess(buffer.getvalue(), tic_id="1", config=config)
+    else:
+        curve, audit = prepare_tess(buffer.getvalue(), tic_id="1", config=config)
+        assert curve.original_end_days == pytest.approx(25)
+        assert curve.time_metadata.absolute_epoch == 2458325
+        assert audit["column_units"]["TIME"] == unit
+        assert audit["source_data_release"] == 42

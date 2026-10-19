@@ -50,6 +50,10 @@ QUERY = {
 }
 
 
+class ReleaseAmbiguityError(DataValidationError):
+    """Unresolved processing provenance stops acquisition, never excludes a star."""
+
+
 def utc_now() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -123,6 +127,7 @@ def read_json(root: Path, name: str) -> dict:
 def candidate_inventory(rows: list[dict], sanity_tic: str) -> dict:
     """Validate all returned observations before numerical TIC ordering/deduplication."""
     groups: dict[str, list[dict]] = {}
+    seen_observations: set[str] = set()
     excluded = []
     for row in rows:
         try:
@@ -150,6 +155,12 @@ def candidate_inventory(rows: list[dict], sanity_tic: str) -> dict:
             )
         tic = str(int(tic))
         clean = {name: row[name] for name in OBS_COLUMNS}
+        identity = str(row["obsid"])
+        if identity in seen_observations:
+            raise DataValidationError(
+                "observation inventory: duplicate obsid across pages; stop before selection"
+            )
+        seen_observations.add(identity)
         if clean not in groups.setdefault(tic, []):
             groups[tic].append(clean)
     ordered = [
@@ -171,8 +182,106 @@ def candidate_inventory(rows: list[dict], sanity_tic: str) -> dict:
     }
 
 
+def acquire_inventory(archive: MastArchive, sanity_tic: str) -> dict:
+    """Disjoint decimal-prefix partitions avoid unstable server pagination.
+
+    A split includes the exact prefix plus its ten children, so short/zero-padded
+    decimal TIC strings cannot disappear. Verify every parent count, global count
+    and unique observation identity; never use a partial inventory. Existing
+    1000-row page, 40 data-page and 40000-row ceilings remain unchanged.
+    """
+    count_requests = 0
+    leaves: list[tuple[str, bool, int]] = []
+
+    def params(prefix: str, exact: bool) -> dict:
+        filters = QUERY["filters"] + (
+            [
+                {
+                    "paramName": "target_name",
+                    "values": [prefix] if exact else [],
+                    **({} if exact else {"freeText": prefix + "%"}),
+                }
+            ]
+            if prefix
+            else []
+        )
+        return {"columns": QUERY["columns"], "filters": filters}
+
+    def count(prefix: str, exact: bool = False) -> int:
+        nonlocal count_requests
+        count_requests += 1
+        if count_requests > 128:
+            raise DataValidationError(
+                "inventory partitions: count budget exhausted; preserve failure"
+            )
+        request = {**params(prefix, exact), "columns": "COUNT_BIG(*)"}
+        rows = archive.query("Mast.Caom.Filtered", request, pagesize=1)
+        if (
+            len(rows) != 1
+            or not str(rows[0].get("Column1", "")).isascii()
+            or not str(rows[0].get("Column1", "")).isdigit()
+        ):
+            raise DataValidationError("inventory count: malformed; stop before selection")
+        result = int(rows[0]["Column1"])
+        if result > 40000:
+            raise DataValidationError("inventory count: over 40000; do not narrow the sample")
+        return result
+
+    def partition(prefix: str, expected: int, exact: bool = False) -> None:
+        if not expected:
+            return
+        if expected <= 1000:
+            leaves.append((prefix, exact, expected))
+            if len(leaves) > 40:
+                raise DataValidationError(
+                    "inventory partitions: over 40 data pages; stop explicitly"
+                )
+            return
+        if exact or len(prefix) >= 16:
+            raise DataValidationError("inventory partition: cannot fit one bounded page; stop")
+        observed = 0
+        if prefix:
+            short = count(prefix, True)
+            observed += short
+            partition(prefix, short, True)
+        for digit in "0123456789":
+            child = prefix + digit
+            size = count(child)
+            observed += size
+            partition(child, size)
+        if observed != expected:
+            raise DataValidationError("inventory partition counts: incomplete/changing scope; stop")
+
+    total = count("")
+    partition("", total)
+    rows = []
+    for prefix, exact, expected in leaves:
+        page = archive.query("Mast.Caom.Filtered", params(prefix, exact))
+        if len(page) != expected or any(
+            (
+                str(r.get("target_name")) != prefix
+                if exact
+                else not str(r.get("target_name")).startswith(prefix)
+            )
+            for r in page
+        ):
+            raise DataValidationError("inventory partition rows: count/predicate mismatch; stop")
+        rows.extend(page)
+    if len(rows) != total:
+        raise DataValidationError("inventory total: incomplete; stop before selection")
+    inventory = candidate_inventory(rows, sanity_tic)
+    inventory["partition_verification"] = {
+        "global_count": total,
+        "count_requests": count_requests,
+        "data_pages": len(leaves),
+        "leaves": [{"prefix": p, "exact": e, "count": n} for p, e, n in leaves],
+        "unique_observation_ids": len(rows),
+    }
+    return inventory
+
+
 def choose_product(rows: list[dict], candidate: dict) -> tuple[dict, list[dict]]:
-    """Newest documented archive release, version when available, filename tie-break.
+    """Select a unique archive LC identity; require evidence before comparing releases.
 
     The filename's four-digit spacecraft configuration ID is NOT a pipeline version.
     Preserve all considered products and rejection reasons, including non-LC files.
@@ -231,19 +340,17 @@ def choose_product(rows: list[dict], candidate: dict) -> tuple[dict, list[dict]]
             "product selection: no eligible LC product; preserve exclusion inventory"
         )
 
-    def key(p: dict) -> tuple:
-        v = p["archive_processing_version"]
-        match = re.fullmatch(r"(?:spoc-)?([0-9]+)\.([0-9]+)\.([0-9]+)(?:[-._a-zA-Z0-9]*)?", v or "")
-        version = tuple(int(x) for x in match.groups()) if match else (0, 0, 0)
-        return (-p["archive_release_mjd"], tuple(-n for n in version), p["filename"])
-
-    chosen = sorted(eligible.values(), key=key)[0]
+    if len(eligible) != 1:
+        raise ReleaseAmbiguityError(
+            "processing release: multiple LC identities without a verified release ordering; "
+            "preserve product metadata and resolve official release mapping before selecting"
+        )
+    chosen = next(iter(eligible.values()))
+    chosen["selection_basis"] = "unique current archive LC identity; no release comparison"
     for entry in evidence:
         if entry["exclusion_reason"] is None:
             entry["exclusion_reason"] = (
-                None
-                if entry["product"]["dataURI"] == chosen["data_uri"]
-                else "older archive release/version or filename tie-break"
+                None if entry["product"]["dataURI"] == chosen["data_uri"] else "not selected"
             )
     return chosen, evidence
 
@@ -303,6 +410,9 @@ def verify_pinned(
     product: dict, content: bytes, config: ProtocolConfig, cache: Path
 ) -> PreparedCurve:
     curve, audit = prepare_tess(content, tic_id=product["tic_id"], config=config)
+    reconciliation = reconcile_processing(product, audit)
+    if product.get("processing_reconciliation") != reconciliation:
+        raise DataValidationError("processing reconciliation: changed; restore pinned provenance")
     if (
         source_sha256(content) != product["source_sha256"]
         or curve.content_hash != product["qc"]["prepared_hash"]
@@ -318,6 +428,41 @@ def verify_pinned(
         )
     save_prepared(cache, curve)
     return curve
+
+
+def reconcile_processing(product: dict, audit: dict) -> dict:
+    """Compare opaque archive/FITS versions; never assume semantic-version ordering."""
+    archive_version = product["archive_processing_version"]
+    fits_version = audit["processing_version"]
+    status = "exact_version_match" if archive_version == fits_version else "archive_version_absent"
+    if archive_version is not None and archive_version != fits_version:
+        # Live CAOM metadata can retain an opaque legacy calibration token while
+        # the same persistent URI serves DR42 bytes. Do not call the tokens equal:
+        # retain both and use the source's documented DATA_REL/PROCVER evidence.
+        if not (
+            re.fullmatch(r"[0-9a-f]{10}", archive_version)
+            and audit["source_data_release"] == 42
+            and re.fullmatch(r"spoc-5\.0\.[0-9]+-[0-9]{8}", fits_version)
+            and product.get("selection_basis")
+            == "unique current archive LC identity; no release comparison"
+        ):
+            raise DataValidationError(
+                "processing identity: archive version differs from FITS PROCVER without "
+                "verified DR42 evidence; preserve source and resolve provenance"
+            )
+        status = "archive_token_differs_source_DR42_verified"
+    return {
+        "status": status,
+        "archive_processing_version": archive_version,
+        "fits_processing_version": fits_version,
+        "source_data_release": audit["source_data_release"],
+        "release_reference": (
+            "https://archive.stsci.edu/missions/tess/doc/tess_drn/"
+            "tess_reprocessing-sector_1_13_drn42_v02.pdf"
+        )
+        if status == "archive_token_differs_source_DR42_verified"
+        else None,
+    }
 
 
 def require_final_manifest(manifest: dict) -> None:
@@ -446,12 +591,27 @@ def fetch_pinned(manifest: dict, config: ProtocolConfig, cache: Path, archive: M
 
 
 def fetch(
-    config: ProtocolConfig, *, data_root: Path, cache_root: Path, archive: MastArchive
+    config: ProtocolConfig,
+    *,
+    data_root: Path,
+    cache_root: Path,
+    archive: MastArchive,
+    recheck_qc: bool = False,
+    rebuild_inventory: bool = False,
+    metadata_only: bool = False,
 ) -> dict:
     """Resume pinned state or make the first provisional manifest. Never finalize T03."""
     manifest_file = safe_file(data_root, "manifest.json")
     config_hash = input_settings_hash(config)
     if manifest_file.exists():
+        if metadata_only:
+            raise DataValidationError(
+                "metadata-only: manifest exists; use pinned offline verification"
+            )
+        if recheck_qc or rebuild_inventory:
+            raise DataValidationError(
+                "QC recheck: manifest already exists; preserve pinned provenance"
+            )
         manifest = read_json(data_root, "manifest.json")
         return fetch_pinned(manifest, config, cache_root, archive)
     if config.frozen:
@@ -483,24 +643,67 @@ def fetch(
         "invoke_method": "GET",
         "response_idle_seconds": 60,
         "request_deadline_seconds": 180,
+        "recheck_qc": recheck_qc,
+        "rebuild_inventory": rebuild_inventory,
+        "metadata_only": metadata_only,
     }
     state["invocations"].append(invocation)
     write_json(data_root, "acquisition.json", state)
     try:
         inventory_path = safe_file(data_root, "candidate_inventory.json")
-        if inventory_path.exists():
+        if rebuild_inventory and inventory_path.exists():
+            previous = read_json(data_root, "candidate_inventory.json")
+            observed = sum(len(c["observations"]) for c in previous["candidates"])
+            if observed == previous["observations_returned"]:
+                raise DataValidationError(
+                    "inventory rebuild: no proven paging failure; do not reselect"
+                )
+            evidence_name = "candidate_inventory_rejected_paging.json"
+            if safe_file(data_root, evidence_name).exists():
+                raise DataValidationError(
+                    "inventory rebuild: prior evidence exists; independent diagnosis required"
+                )
+            write_json(data_root, evidence_name, previous)
+            state.setdefault("rejected_inventories", []).append(
+                {
+                    "filename": evidence_name,
+                    "inventory_hash": state.get("inventory_hash"),
+                    "returned_rows": previous["observations_returned"],
+                    "unique_rows": observed,
+                    "attempts": state["attempts"],
+                    "reason": "duplicate/omitted observations in paging",
+                    "rejected_utc": utc_now(),
+                }
+            )
+            state["attempts"] = []
+            write_json(data_root, "acquisition.json", state)
+        if inventory_path.exists() and not rebuild_inventory:
             inventory = read_json(data_root, "candidate_inventory.json")
             if canonical_hash(inventory) != state.get("inventory_hash"):
                 raise DataValidationError(
                     "inventory hash: mismatch; restore original candidate evidence"
                 )
+            if inventory["observations_returned"] != sum(
+                len(c["observations"]) for c in inventory["candidates"]
+            ):
+                raise DataValidationError(
+                    "inventory: proven paging failure; preserve evidence and --rebuild-inventory"
+                )
         else:
-            inventory = candidate_inventory(
-                archive.query("Mast.Caom.Filtered", QUERY), config.sanity.tic_id
-            )
+            inventory = acquire_inventory(archive, config.sanity.tic_id)
             state["inventory_hash"] = canonical_hash(inventory)
             write_json(data_root, "candidate_inventory.json", inventory)
             write_json(data_root, "acquisition.json", state)
+        if metadata_only:
+            state["status"] = "metadata_verified"
+            invocation["status"] = "complete"
+            return {
+                "status": "metadata_verified",
+                "mode": "inventory",
+                "observations": inventory["observations_returned"],
+                "downloads": 0,
+                "bytes_received": archive.budget.bytes_received,
+            }
         candidates = inventory["candidates"]
         sanity = next(c for c in candidates if c["tic_id"] == config.sanity.tic_id)
         queue = [sanity] + [c for c in candidates if c["tic_id"] != config.sanity.tic_id]
@@ -513,6 +716,32 @@ def fetch(
             if len(accepted) == 7:
                 break
             old = next((a for a in state["attempts"] if a["tic_id"] == candidate["tic_id"]), None)
+            if (
+                old is not None
+                and recheck_qc
+                and old["status"] in ("basic_qc_excluded", "processing_unresolved")
+            ):
+                if cached_source(cache_root, old["product"]) is None:
+                    raise DataValidationError(
+                        "QC recheck: exact source cache missing; restore it first"
+                    )
+                old.setdefault("qc_history", []).append(
+                    {
+                        "rechecked_utc": utc_now(),
+                        "status": old["status"],
+                        "reasons": old.get("reasons", []),
+                        "qc": old["product"].get("qc"),
+                        "preparation_source_sha256": source_sha256(
+                            Path(__file__).with_name("tess_input.py").read_bytes()
+                        ),
+                    }
+                )
+                old["status"] = "selected"
+                write_json(data_root, "acquisition.json", state)
+            if old is not None and old["status"] == "basic_qc_excluded" and candidate is sanity:
+                raise DataValidationError(
+                    "sanity QC: saved failure; repair preparation then explicitly --recheck-qc"
+                )
             if old is not None and old["status"] in (
                 "basic_qc_pass",
                 "basic_qc_excluded",
@@ -533,12 +762,32 @@ def fetch(
                 try:
                     product, evidence = choose_product(products, candidate)
                 except DataValidationError as error:
-                    attempt.update(status="metadata_excluded", reason=str(error))
+                    unresolved = isinstance(error, ReleaseAmbiguityError)
+                    attempt.update(
+                        status="metadata_unresolved" if unresolved else "metadata_excluded",
+                        reason=str(error),
+                    )
                     write_json(data_root, "acquisition.json", state)
-                    if candidate is sanity:
+                    if candidate is sanity or unresolved:
                         raise
                     continue
                 attempt.update(product=product, selection_evidence=evidence, status="selected")
+                for rejected in state.get("rejected_inventories", []):
+                    for prior in rejected["attempts"]:
+                        saved = prior.get("product", {})
+                        if saved.get("data_uri") == product["data_uri"] and saved.get(
+                            "source_sha256"
+                        ):
+                            if any(saved.get(k) != v for k, v in product.items()):
+                                raise DataValidationError(
+                                    "inventory repair: pinned metadata changed; stop"
+                                )
+                            product.update(
+                                {
+                                    k: saved[k]
+                                    for k in ("source_sha256", "acquired_utc", "byte_size")
+                                }
+                            )
                 write_json(data_root, "acquisition.json", state)
             if "product" not in attempt:
                 raise DataValidationError(
@@ -598,6 +847,11 @@ def fetch(
                     raise
                 continue
             # A disk/cache failure is not a reason to reject a scientific candidate.
+            try:
+                product["processing_reconciliation"] = reconcile_processing(product, audit)
+            except DataValidationError:
+                attempt["status"] = "processing_unresolved"
+                raise
             save_prepared(cache_root, curve)
             write_json(data_root, "acquisition.json", state)
             if candidate is sanity and reasons:
@@ -644,8 +898,7 @@ def fetch(
             "downloads_total": state["downloads_total"],
             "products": products,
             "selection_rule": (
-                "numeric TIC order; newest documented archive release/version"
-                "; ascending filename tie-break"
+                "numeric TIC order; unique current LC identity; ambiguous releases stop selection"
             ),
             "attribution": [
                 "https://archive.stsci.edu/missions-and-data/tess",
@@ -664,6 +917,7 @@ def fetch(
             ended_utc=utc_now(),
             downloads=archive.budget.downloads,
             bytes_received=archive.budget.bytes_received,
+            transport=archive.diagnostics,
         )
         write_json(data_root, "acquisition.json", state)
     return {
