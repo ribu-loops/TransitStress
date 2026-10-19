@@ -1,0 +1,9 @@
+{
+  "description": "Assistant-written analytic fixture; no source data or measured benchmark results.",
+  "raw": {"time_days": [0.0, 0.005], "flux": [10.0, 14.0], "flux_err": [1.0, 2.0]},
+  "normalization_median": 12.0,
+  "normalized_flux": [0.8333333333333333, 1.1666666666666667],
+  "normalized_error": [0.08333333333333333, 0.16666666666666666],
+  "bin": {"time_days": 0.001, "raw_flux": 10.8, "raw_error": 0.8944271909999159, "normalized_flux": 0.9, "normalized_error": 0.07453559924999299, "support": 2},
+  "ppm": {"depth_ppm": 750.0, "relative_depth": 0.00075, "percent": 0.075}
+}

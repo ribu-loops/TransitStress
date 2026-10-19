@@ -1,0 +1,8 @@
+{
+  "description": "Separately handwritten injection reference; P=2 d, t0=0.5 d, D=0.5 d. Left edge included, right edge excluded.",
+  "period_days": 2.0, "epoch_days": 0.5, "duration_days": 0.5, "depth": 0.00075,
+  "time_days": [0.0, 0.25, 0.5, 0.75, 1.0, 2.25, 2.5, 2.75],
+  "centered_phase_days": [-0.5, -0.25, 0.0, 0.25, 0.5, -0.25, 0.0, 0.25],
+  "in_transit": [false, true, true, false, false, true, true, false],
+  "expected_flux_from_unity": [1.0, 0.99925, 0.99925, 1.0, 1.0, 0.99925, 0.99925, 1.0]
+}

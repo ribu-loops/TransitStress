@@ -1,4 +1,4 @@
-"""Small offline bootstrap CLI."""
+"""Small offline environment and protocol-validation CLI."""
 
 import argparse
 import importlib.metadata
@@ -24,7 +24,7 @@ def doctor(config_path: Path) -> dict[str, object]:
         "mode": app_mode(),
         "dependencies": {name: importlib.metadata.version(name) for name in DEPENDENCIES},
         "protocol_id": config.protocol_id,
-        "validation": "bootstrap only; full scientific validation pending T01",
+        "validation": "complete protocol-v1 configuration validation (T01)",
         "manifest_available": Path("data/manifest.json").is_file(),
         "demo_available": Path("demo").is_dir(),
         "cache_available": Path(".cache/transitstress").is_dir(),
@@ -33,7 +33,7 @@ def doctor(config_path: Path) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="TransitStress bootstrap (T00)")
+    parser = argparse.ArgumentParser(description="TransitStress environment and configuration")
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("doctor", help="Check local setup without network access")
     check.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
