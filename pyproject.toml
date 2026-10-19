@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "transitstress"
+version = "0.1.0"
+description = "Local transit preprocessing robustness experiment (bootstrap)"
+requires-python = ">=3.12,<3.13"
+dependencies = ["numpy", "pandas", "astropy", "lightkurve", "plotly", "streamlit"]
+
+[project.scripts]
+transitstress = "transitstress.cli:main"
+
+[dependency-groups]
+dev = ["pytest", "ruff", "bandit", "pip-audit"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

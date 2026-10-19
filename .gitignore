@@ -1,5 +1,6 @@
 # Environment and generated local state
 .venv/
+.tools/
 .cache/
 __pycache__/
 *.py[cod]
