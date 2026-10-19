@@ -10,15 +10,15 @@ Environment evidence and setup limitations are recorded in `docs/ENVIRONMENT.md`
 In a new PowerShell terminal in this folder:
 
 ```powershell
-uv sync --locked
-uv run --locked python -m transitstress doctor
-uv run --locked python scripts/check.py --level quick
-uv run --locked python scripts/check.py --level security
+python -m uv sync --locked
+python -m uv run --locked python -m transitstress doctor
+python -m uv run --locked python scripts/check.py --level quick
+python -m uv run --locked python scripts/check.py --level security
 ```
 
-If the current terminal has not picked up uv's user PATH installation, substitute
-`python -m uv` for `uv`. Python 3.13 runs the uv launcher only; the project uses
-uv-managed Python 3.12 and its own `.venv`.
+These commands use uv's Python module without relying on its executable PATH.
+Python 3.13 runs the uv launcher only; the project uses Python 3.12 in ignored
+`.tools/python` and its own `.venv`. See the environment repair record if recreating it.
 
 Doctor reads the draft protocol and reports allowlisted local setup facts without
 acquiring data. T00 validation covers bootstrap identity, finite numbers, search
