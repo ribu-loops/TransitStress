@@ -77,6 +77,67 @@ def match_pin(product: dict, pin: dict) -> None:
         )
 
 
+def _check_uri_metadata(rows: list[dict], pins_by_uri: dict[str, dict]) -> None:
+    """A row asserting a scheduled URI must agree even when individually ineligible."""
+    for row in rows:
+        pin = pins_by_uri.get(row.get("dataURI"))
+        if pin is None:
+            continue
+        expected = {
+            "productFilename": pin["filename"],
+            "obs_id": pin["observation_id"],
+            "obs_collection": "TESS",
+            "dataRights": "PUBLIC",
+            "productType": "SCIENCE",
+            "size": pin["declared_bytes"],
+            "prvversion": pin["archive_processing_version"],
+        }
+        if (
+            any(row.get(k) != v for k, v in expected.items())
+            or type(row.get("size")) is not int
+            or str(row.get("obsID")) != pin["product_group_id"]
+            or str(row.get("parent_obsid")) != pin["observation_group_id"]
+        ):
+            raise DataValidationError(
+                "cohort metadata identity conflict: scheduled URI row disagrees; preserve evidence"
+            )
+
+
+def _history_attempts(history: dict) -> list[dict]:
+    return history["attempts"] + [
+        a for rejection in history["rejected_inventories"] for a in rejection["attempts"]
+    ]
+
+
+def _check_recorded_metadata(attempts: list[dict], record: dict) -> None:
+    """Check raw historical/current rows and normalized pins without choosing a winner."""
+    pins = {p["data_uri"]: p for p in record["products"]}
+    seen = {}
+    for attempt in attempts:
+        product = attempt.get("product")
+        if product is not None and product.get("data_uri") in pins:
+            uri = product["data_uri"]
+            match_pin(product, pins[uri])
+            if attempt["tic_id"] != pins[uri]["tic_id"]:
+                raise DataValidationError(
+                    "cohort recorded identity conflict: URI/TIC disagree; stop"
+                )
+            known = seen.setdefault(uri, {})
+            for key in ("source_sha256", "byte_size"):
+                value = product.get(key)
+                if value is None:
+                    continue  # An incomplete attempt cannot erase an earlier known pin.
+                if key in known and known[key] != value:
+                    raise DataValidationError(
+                        "cohort recorded identity conflict: same-URI source pins; stop"
+                    )
+                known[key] = value
+        rows = attempt.get("product_inventory", []) + [
+            entry["product"] for entry in attempt.get("selection_evidence", [])
+        ]
+        _check_uri_metadata(rows, pins)
+
+
 def _legacy(data_root: Path) -> dict | None:
     if not acq.safe_file(data_root, "acquisition.json").exists():
         if any(
@@ -102,6 +163,8 @@ def _legacy(data_root: Path) -> dict | None:
 def initialize(config: ProtocolConfig, data_root: Path, record: dict) -> dict:
     """One atomic self-contained migration; historical files are never modified."""
     history = _legacy(data_root)
+    if history:
+        _check_recorded_metadata(_history_attempts(history), record)
     if acq.safe_file(data_root, JOURNAL).exists():
         state = acq.read_json(data_root, JOURNAL)
         if (
@@ -127,9 +190,7 @@ def initialize(config: ProtocolConfig, data_root: Path, record: dict) -> dict:
     pins = {p["tic_id"]: p for p in record["products"]}
     inherited = []
     if history:
-        old_attempts = history["attempts"] + [
-            a for rejection in history["rejected_inventories"] for a in rejection["attempts"]
-        ]
+        old_attempts = _history_attempts(history)
         for old in old_attempts:
             product = old.get("product")
             if product is None:
@@ -165,6 +226,7 @@ def initialize(config: ProtocolConfig, data_root: Path, record: dict) -> dict:
 
 def _validate_attempts(state: dict, record: dict) -> None:
     pins = {p["tic_id"]: p for p in record["products"]}
+    _check_recorded_metadata(state["attempts"], record)
     seen = set()
     for attempt in state["attempts"]:
         tic = attempt["tic_id"]
@@ -190,6 +252,7 @@ def _validate_attempts(state: dict, record: dict) -> None:
         match_pin(verified["product"], pins[tic])
         if verified.get("evidence_hash") != canonical_hash(verified["evidence"]):
             raise DataValidationError("cohort metadata: evidence hash conflict; stop")
+        _check_uri_metadata(verified["evidence"]["products"], {pins[tic]["data_uri"]: pins[tic]})
 
 
 def verify_metadata(pin: dict, archive: MastArchive, evidence: dict) -> dict:
@@ -209,6 +272,7 @@ def verify_metadata(pin: dict, archive: MastArchive, evidence: dict) -> dict:
         raise DataValidationError("cohort observation: exact scheduled identity missing; stop")
     products = archive.query("Mast.Caom.Products", {"obsid": pin["observation_group_id"]})
     evidence["products"] = products
+    _check_uri_metadata(products, {pin["data_uri"]: pin})
     exact = [p for p in products if p.get("dataURI") == pin["data_uri"]]
     product, _ = acq.choose_product(exact, {"tic_id": pin["tic_id"], "observations": selected})
     match_pin(product, pin)
@@ -227,6 +291,19 @@ def validate_manifest_cohort(manifest: dict, config: ProtocolConfig) -> None:
         match_pin(p, pins[p["tic_id"]])
 
 
+def _reconcile_source(attempt: dict, audit: dict) -> None:
+    """Provenance must succeed before any QC exclusion may advance selection."""
+    product = attempt["product"]
+    product["qc"] = audit
+    attempt["status"] = "processing_unresolved"
+    try:
+        product["processing_reconciliation"] = acq.reconcile_processing(product, audit)
+    except (KeyError, TypeError) as error:
+        raise DataValidationError(
+            "processing identity: incomplete/invalid audit; resolve provenance before QC exclusion"
+        ) from error
+
+
 def _source(
     attempt: dict,
     state: dict,
@@ -238,6 +315,9 @@ def _source(
 ) -> None:
     product = attempt["product"]
     if attempt["status"] == "basic_qc_excluded" and not recheck:
+        attempt.setdefault("qc_rejection_reasons", list(attempt.get("reasons", [])))
+        _reconcile_source(attempt, product.get("qc", {}))
+        attempt["status"] = "basic_qc_excluded"
         return
     if attempt["status"] == "basic_qc_pass":
         content = acq.cached_source(cache, product)
@@ -288,13 +368,12 @@ def _source(
     try:
         curve, audit = acq.prepare_tess(content, tic_id=product["tic_id"], config=config)
     except TessQCError as error:
-        product["qc"] = error.audit
+        attempt["qc_rejection_reasons"] = [str(error)]
+        _reconcile_source(attempt, error.audit)
         attempt.update(status="basic_qc_excluded", reasons=[str(error)])
         return
     # Metadata/unit/identity parsing errors and processing disagreement stop, not exclude.
-    product["qc"] = audit
-    attempt["status"] = "processing_unresolved"
-    product["processing_reconciliation"] = acq.reconcile_processing(product, audit)
+    _reconcile_source(attempt, audit)
     reasons = acq.basic_qc_reasons(curve, audit, config)
     attempt.update(status="basic_qc_excluded" if reasons else "basic_qc_pass", reasons=reasons)
     acq.save_prepared(cache, curve)

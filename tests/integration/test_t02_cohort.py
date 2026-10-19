@@ -484,7 +484,15 @@ def test_cohort_qc_recheck_preserves_history_without_downloading(
     tmp_path, setup_cohort, monkeypatch
 ):
     def old_parser(*args, **kwargs):
-        raise acq.TessQCError("controlled prior QC failure", {"input_rows": 18001})
+        # A scientific QC rejection still requires a complete identity audit.
+        raise acq.TessQCError(
+            "controlled prior QC failure",
+            {
+                "input_rows": 18001,
+                "processing_version": "spoc-5.0.10-20200904",
+                "source_data_release": 42,
+            },
+        )
 
     with monkeypatch.context() as patch:
         patch.setattr(acq, "prepare_tess", old_parser)
@@ -575,3 +583,187 @@ def test_mock_final_exact_reacquisition_and_hash_conflict(tmp_path, setup_cohort
     for flag in ("recheck_qc", "metadata_only", "rebuild_inventory"):
         with pytest.raises(DataValidationError):
             run(tmp_path, setup_cohort, **{flag: True})
+
+
+def test_r1_qc_failure_cannot_hide_provenance_conflict(tmp_path, setup_cohort):
+    # Review R1: zero usable rows and unknown/DR41 provenance on candidate 8195886.
+    sources = setup_cohort[3]
+    with fits.open(io.BytesIO(sources["8195886"])) as hdus:
+        hdus[0].header["PROCVER"] = "unknown"
+        hdus[0].header["DATA_REL"] = 41
+        hdus[1].data["QUALITY"][:] = 17087
+        stream = io.BytesIO()
+        hdus.writeto(stream)
+        sources["8195886"] = stream.getvalue()
+    archive = setup_cohort[2]()
+    with pytest.raises(DataValidationError, match="processing identity"):
+        run(tmp_path, setup_cohort, archive)
+    state = acq.read_json(tmp_path / "data", cohort.JOURNAL)
+    failed = state["attempts"][-1]
+    assert [a["tic_id"] for a in state["attempts"]] == ["261136679", "8195886"]
+    assert failed["status"] == "processing_unresolved"
+    assert failed["product"]["qc"]["processing_version"] == "unknown"
+    assert failed["product"]["qc"]["source_data_release"] == 41
+    assert failed["product"]["qc"]["retained_rows"] == 0
+    assert failed["qc_rejection_reasons"] == ["FITS retained rows: fewer than two; reject product"]
+    assert state["downloads_total"] == 2 and len(state["reservations"]) == 2
+    assert archive.downloads == [p["data_uri"] for p in setup_cohort[1]["products"][:2]]
+    assert not (tmp_path / "data/manifest.json").exists()
+
+
+def test_r1_valid_provenance_qc_rejection_can_use_reserve(tmp_path, setup_cohort):
+    sources = setup_cohort[3]
+    with fits.open(io.BytesIO(sources["8195886"])) as hdus:
+        hdus[1].data["QUALITY"][:] = 17087
+        stream = io.BytesIO()
+        hdus.writeto(stream)
+        sources["8195886"] = stream.getvalue()
+    run(tmp_path, setup_cohort)
+    state = acq.read_json(tmp_path / "data", cohort.JOURNAL)
+    excluded = next(a for a in state["attempts"] if a["tic_id"] == "8195886")
+    assert excluded["status"] == "basic_qc_excluded"
+    assert excluded["product"]["processing_reconciliation"]["source_data_release"] == 42
+    manifest = acq.read_json(tmp_path / "data", "manifest.json")
+    assert [p["tic_id"] for p in manifest["products"]] == [
+        "261136679",
+        "8196058",
+        "8196285",
+        "8196324",
+        "8196402",
+        "24195569",
+        "24231627",
+        "24265684",
+    ]
+
+
+def test_r1_saved_qc_exclusion_requires_provenance_on_resume(tmp_path, setup_cohort):
+    run(tmp_path, setup_cohort, metadata_only=True)
+    state = acq.read_json(tmp_path / "data", cohort.JOURNAL)
+    product = copy.deepcopy(state["metadata"]["8195886"]["product"])
+    product["qc"] = {"processing_version": "unknown", "source_data_release": 41}
+    state["attempts"] = [
+        {
+            "tic_id": "8195886",
+            "product": product,
+            "status": "basic_qc_excluded",
+            "reasons": ["prior QC failure"],
+            "events": [],
+        }
+    ]
+    acq.write_json(tmp_path / "data", cohort.JOURNAL, state)
+    archive = setup_cohort[2]()
+    with pytest.raises(DataValidationError, match="processing identity"):
+        run(tmp_path, setup_cohort, archive)
+    assert archive.downloads == [setup_cohort[1]["products"][0]["data_uri"]]
+    assert not (tmp_path / "data/manifest.json").exists()
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("size", 0),
+        ("dataRights", "PRIVATE"),
+        ("productType", "INFO"),
+        ("obs_collection", "OTHER"),
+        ("parent_obsid", 0),
+        ("obsID", 0),
+        ("obs_id", "wrong-observation"),
+        ("productFilename", "wrong_lc.fits"),
+        ("prvversion", 42),
+    ],
+)
+def test_r2_ineligible_same_uri_row_is_identity_conflict_before_downloads(
+    tmp_path, setup_cohort, field, value
+):
+    pin = setup_cohort[1]["products"][1]
+    rows = setup_cohort[-1][pin["observation_group_id"]]
+    rows.append({**rows[0], field: value})
+    archive = setup_cohort[2]()
+    with pytest.raises(DataValidationError, match="identity.*conflict"):
+        run(tmp_path, setup_cohort, archive, metadata_only=True)
+    state = acq.read_json(tmp_path / "data", cohort.JOURNAL)
+    assert state["downloads_total"] == 0 and not archive.downloads and not state["attempts"]
+    assert state["metadata_attempts"][-1]["status"] == "failed"
+    assert state["metadata_attempts"][-1]["evidence"]["products"] == rows
+    assert not (tmp_path / "data/manifest.json").exists()
+
+
+def test_r2_matching_duplicates_are_safe_but_historical_raw_conflict_stops(
+    tmp_path, setup_cohort, monkeypatch
+):
+    config, record, Archive, _, _, products = setup_cohort
+    pin = record["products"][1]
+    valid = products[pin["observation_group_id"]][0]
+    products[pin["observation_group_id"]].append(copy.deepcopy(valid))
+    assert cohort.verify_metadata(pin, Archive(), {})["product"]["declared_bytes"] == 2039040
+    # Prior selecting attempt has no chosen product: its contradictory rows must
+    # still be inspected rather than silently skipped during migration.
+    history = {
+        "downloads_total": 5,
+        "attempts": [],
+        "invocations": [],
+        "rejected_inventories": [
+            {
+                "attempts": [
+                    {
+                        "tic_id": pin["tic_id"],
+                        "status": "selecting",
+                        "product_inventory": [valid, {**valid, "size": 0}],
+                    }
+                ]
+            }
+        ],
+    }
+    before = copy.deepcopy(history)
+    monkeypatch.setattr(cohort, "_legacy", lambda root: history)
+    with pytest.raises(DataValidationError, match="identity.*conflict"):
+        cohort.initialize(config, tmp_path / "data", record)
+    assert history == before and not (tmp_path / "data" / cohort.JOURNAL).exists()
+
+
+def test_r2_saved_metadata_conflict_is_not_trusted_on_resume(tmp_path, setup_cohort):
+    run(tmp_path, setup_cohort, metadata_only=True)
+    state = acq.read_json(tmp_path / "data", cohort.JOURNAL)
+    verified = state["metadata"]["8195886"]
+    rows = verified["evidence"]["products"]
+    rows.append({**rows[0], "size": 0})
+    verified["evidence_hash"] = canonical_hash(verified["evidence"])
+    acq.write_json(tmp_path / "data", cohort.JOURNAL, state)
+    before = (tmp_path / "data" / cohort.JOURNAL).read_bytes()
+    archive = setup_cohort[2]()
+    with pytest.raises(DataValidationError, match="identity.*conflict"):
+        run(tmp_path, setup_cohort, archive)
+    assert not archive.queries and not archive.downloads
+    assert (tmp_path / "data" / cohort.JOURNAL).read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("source_sha256", "b" * 64),
+        ("declared_bytes", 0),
+        ("archive_processing_version", "conflicting-version"),
+    ],
+)
+def test_r2_conflicting_historical_pins_are_not_silently_chosen(
+    tmp_path, setup_cohort, monkeypatch, field, value
+):
+    config, record, *_ = setup_cohort
+    pin = record["products"][1]
+    product = {k: pin[k] for k in cohort.PIN_KEYS}
+    product.update(source_sha256="a" * 64, byte_size=2039040)
+    incomplete = {k: pin[k] for k in cohort.PIN_KEYS}
+    conflicting = {**product, field: value}
+    history = {
+        "downloads_total": 5,
+        "invocations": [],
+        "rejected_inventories": [],
+        "attempts": [
+            {"tic_id": pin["tic_id"], "product": p} for p in (product, incomplete, conflicting)
+        ],
+    }
+    before = copy.deepcopy(history)
+    monkeypatch.setattr(cohort, "_legacy", lambda root: history)
+    with pytest.raises(DataValidationError, match="identity.*conflict"):
+        cohort.initialize(config, tmp_path / "data", record)
+    assert history == before and not (tmp_path / "data" / cohort.JOURNAL).exists()
