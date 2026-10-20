@@ -30,9 +30,7 @@ def doctor(config_path: Path) -> dict[str, object]:
         "manifest_available": Path("data/manifest.json").is_file(),
         "demo_available": Path("demo").is_dir(),
         "cache_available": Path(".cache/transitstress").is_dir(),
-        "science": (
-            "T01 contracts and T02 input preparation; doctor performs no acquisition or search"
-        ),
+        "science": ("T03 injection/masks/time support; doctor performs no acquisition or search"),
     }
 
 
@@ -41,6 +39,10 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("doctor", help="Check local setup without network access")
     check.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
+    finalize = commands.add_parser(
+        "finalize", help="Offline T03 support validation and final roles"
+    )
+    finalize.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
     acquire = commands.add_parser(
         "fetch", help="Explicit MAST acquisition or pinned cache verification"
     )
@@ -65,6 +67,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
+        if args.command == "finalize":
+            from transitstress.eligibility import finalize_eligibility
+
+            report = finalize_eligibility(
+                load_config(args.config),
+                data_root=Path("data"),
+                cache_root=Path(".cache/transitstress"),
+            )
+            print(json.dumps(report, indent=2, allow_nan=False))
+            return 0
         if args.command == "fetch":
             from transitstress.acquisition import fetch, write_selection_csv
             from transitstress.archive import MastArchive

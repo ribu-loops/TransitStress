@@ -14,6 +14,12 @@ Additional security research and primary sources are in `docs/SECURITY_SOURCES.m
 6. **Lightkurve light-curve file tutorial.** https://lightkurve.github.io/lightkurve/tutorials/1-getting-started/using-light-curve-file-products.html . Inspect data product metadata and distinguish SAP/PDCSAP. Use current classes rather than deprecated examples in old tutorials.
 7. **Lightkurve Pi Mensae tutorial.** https://lightkurve.github.io/lightkurve/tutorials/3-science-examples/exoplanets-recover-first-tess-candidate.html . Establishes TIC 261136679, sector 1 and the approximately 6.27-day signal. The tutorial uses pixel data; TransitStress deliberately acquires extracted light-curve products instead.
 8. **Gandolfi et al. (2018), TESS's first planet: a super-Earth transiting the naked-eye star Pi Mensae.** https://arxiv.org/abs/1809.07573 . Published-reference starting point for the known planet. Resolve/cite the exact reference ephemeris during the build; never mix epoch conventions.
+
+   T03 checked 20 October 2026: version 2, Table 5 (PDF page 11) explicitly
+   gives P=6.26834 +/- 0.00024 d and T0=8325.503055 +/- 0.00077 in
+   BJD_TDB-2450000. `data/sanity_reference.json` stores the converted absolute
+   epoch 2458325.503055 BJD_TDB for later post-search comparison only. This is
+   a cited literature reference, not measured recovery or a search-grid input.
 9. **NASA HEASARC TESS light-curve tutorial.** https://heasarc.gsfc.nasa.gov/docs/tess/LightCurveFile-Object-Tutorial.html . Describes upstream processing and SAP versus PDCSAP. Historical API names are not a dependency specification.
 10. **NASA Exoplanet Archive simulated-data overview.** https://exoplanetarchive.ipac.caltech.edu/docs/KeplerSimulated.html . Context for mission-scale completeness/reliability studies. TransitStress does not reproduce their scope or derive their completeness results.
 

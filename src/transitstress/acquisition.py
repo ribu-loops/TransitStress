@@ -475,7 +475,13 @@ def reconcile_processing(product: dict, audit: dict) -> dict:
 
 def require_final_manifest(manifest: dict) -> None:
     """Future benchmark entry points must call this before any benchmark search."""
-    if manifest.get("status") != "final" or manifest.get("support_validation") != "complete":
+    if (
+        manifest.get("status") != "final"
+        or manifest.get("support_validation") != "complete"
+        or manifest.get("roles_provisional") is not False
+        or not isinstance(manifest.get("t03_evidence_hash"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", manifest["t03_evidence_hash"]) is None
+    ):
         raise DataValidationError(
             "manifest: provisional eligibility; complete T03 shared suppo"
             "rt validation before benchmark searches"

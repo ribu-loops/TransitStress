@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "tic_id": "261136679",
+  "planet": "Pi Mensae c",
+  "purpose": "Post-search sanity comparison only; never detector/grid/detrending inputs",
+  "reference": "Gandolfi et al. (2018), arXiv:1809.07573v2, Table 5, page 11",
+  "url": "https://arxiv.org/pdf/1809.07573v2",
+  "doi": "10.1051/0004-6361/201834289",
+  "checked_date": "2026-10-20",
+  "period_days": 6.26834,
+  "period_uncertainty_days": 0.00024,
+  "epoch_bjd_tdb": 2458325.503055,
+  "epoch_uncertainty_days": 0.00077,
+  "table_epoch_offset_days": 2450000,
+  "table_epoch_value_days": 8325.503055,
+  "time_scale": "tdb",
+  "time_format": "jd",
+  "note": "Literature ephemeris, not a TransitStress measurement. The paper's analysis differs from this PDCSAP downstream experiment. No recovery has been run."
+}
