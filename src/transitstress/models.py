@@ -386,10 +386,18 @@ class SearchResult:
 
 @dataclass(frozen=True)
 class EvaluationResult:
-    status: Literal["exact", "other_peak", "insufficient_coverage", "error", "control"]
-    observed_transits: int
-    total_in_transit_points: int
-    partial_edge_events: int
+    status: Literal[
+        "exact",
+        "half_period_peak",
+        "double_period_peak",
+        "other_peak",
+        "insufficient_coverage",
+        "error",
+        "control",
+    ]
+    observed_transits: int | None
+    total_in_transit_points: int | None
+    partial_edge_events: int | None
     exact_recovery: bool | None
     relative_period_error: Measurement
     maximum_timing_error_days: Measurement
@@ -402,15 +410,69 @@ class EvaluationResult:
     background_already_matches: bool | None
     exact_after_injection_without_background_match: bool | None
     failure_reason: str | None = None
+    full_events: int | None = None
+    coverage_eligible: bool | None = None
+    background_match_reason: str | None = None
+    full_centers_days: tuple[float, ...] = ()
+    full_event_points: tuple[int, ...] = ()
+    observed_centers_days: tuple[float, ...] = ()
+    partial_centers_days: tuple[float, ...] = ()
+    partial_event_points: tuple[int, ...] = ()
+
+    @property
+    def scientific_outcome(self) -> str:
+        return "not_applicable" if self.status in {"control", "error"} else self.status
 
     def __post_init__(self) -> None:
         _choice(
             self.status,
-            ("exact", "other_peak", "insufficient_coverage", "error", "control"),
+            (
+                "exact",
+                "half_period_peak",
+                "double_period_peak",
+                "other_peak",
+                "insufficient_coverage",
+                "error",
+                "control",
+            ),
             "evaluation.status",
         )
         for name in ("observed_transits", "total_in_transit_points", "partial_edge_events"):
-            _count(getattr(self, name), name)
+            value = getattr(self, name)
+            if value is None:
+                _require(self.coverage_eligible is None, name, "retain injection counts")
+            else:
+                _count(value, name)
+        for centers, counts in (
+            (self.full_centers_days, self.full_event_points),
+            (self.partial_centers_days, self.partial_event_points),
+        ):
+            _require(
+                type(centers) is tuple and type(counts) is tuple and len(centers) == len(counts),
+                "event counts",
+                "supply aligned immutable centers/counts",
+            )
+            for center in centers:
+                _number(center, "event center")
+            for count in counts:
+                _count(count, "event points")
+        _require(type(self.observed_centers_days) is tuple, "observed centers", "use a tuple")
+        for center in self.observed_centers_days:
+            _number(center, "observed center")
+        if self.full_events is not None:
+            _count(self.full_events, "full_events")
+        _require(
+            self.coverage_eligible is None or type(self.coverage_eligible) is bool,
+            "coverage_eligible",
+            "use boolean or null",
+        )
+        if self.background_match_reason is not None:
+            _text(self.background_match_reason, "background_match_reason")
+        _require(
+            self.background_already_matches is None or self.background_match_reason is None,
+            "background_match_reason",
+            "use null for a measured background match",
+        )
         for name in (
             "relative_period_error",
             "maximum_timing_error_days",
