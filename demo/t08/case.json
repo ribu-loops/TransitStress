@@ -1,0 +1,671 @@
+{
+  "schema_version": 1,
+  "split": "development",
+  "case": {
+    "case_id": "6bd4e804ffa7f720c4056a695b0b5a5e5db445e75778af0eb220bcee886af09e",
+    "curve_id": "tic8195886-s0001-spoc-bc8c0a8db5c092d0",
+    "injection": {
+      "depth": 0.00025,
+      "duration_days": 0.125,
+      "epoch_days": 0.29410000000000003,
+      "family_id": "F1",
+      "period_days": 1.73
+    },
+    "kind": "injection",
+    "mask_definition": "central_block",
+    "mask_hash": "4e17b8469d3c3ab88d88ca49196abb046d66d4f90afcfac46156fdb32efc4575",
+    "prepared_hash": "958656d9b37a504d1cded853b1d043e88b123d6a82dd67771b20f02473825ac3",
+    "seed": null,
+    "sigma": null
+  },
+  "rows": [
+    {
+      "actual_removed_fraction": 0.1702753274525528,
+      "background_already_matches": false,
+      "background_binding": "62680461247ccd4f1e2c8657dedbf8b1c250cdec2c5aa71b1ea10e7f8209fb1d",
+      "background_match_reason": null,
+      "background_search_reason": null,
+      "case_id": "6bd4e804ffa7f720c4056a695b0b5a5e5db445e75778af0eb220bcee886af09e",
+      "case_kind": "injection",
+      "coverage_eligible": true,
+      "curve_id": "tic8195886-s0001-spoc-bc8c0a8db5c092d0",
+      "depth": 0.0002364400537777804,
+      "depth_err": 3.60653979678898e-05,
+      "depth_snr": 6.555869811509933,
+      "detrend_seconds": 0.007245200002216734,
+      "detrend_window_days": 0.5,
+      "double_alias_searchable": true,
+      "double_period_peak": false,
+      "duration_days": 0.08333333333333333,
+      "elapsed_seconds": 0.49014019999594893,
+      "epoch_days": 0.3118043959835963,
+      "evaluation": {
+        "background_already_matches": false,
+        "background_match_reason": null,
+        "coverage_eligible": true,
+        "double_alias_searchable": true,
+        "double_period_peak": false,
+        "exact_after_injection_without_background_match": true,
+        "exact_recovery": true,
+        "failure_reason": null,
+        "full_centers_days": [
+          0.29410000000000003,
+          2.0241,
+          3.7541,
+          5.4841,
+          7.2141,
+          8.9441,
+          10.6741,
+          12.4041,
+          14.1341,
+          15.8641,
+          17.5941,
+          19.3241,
+          21.0541,
+          22.7841,
+          24.5141,
+          26.2441
+        ],
+        "full_event_points": [
+          18,
+          18,
+          18,
+          18,
+          18,
+          18,
+          18,
+          0,
+          0,
+          0,
+          18,
+          18,
+          18,
+          7,
+          18,
+          18
+        ],
+        "full_events": 16,
+        "half_alias_searchable": true,
+        "half_period_peak": false,
+        "maximum_timing_error_days": {
+          "reason": null,
+          "value": 0.04091820905142818
+        },
+        "observed_centers_days": [
+          0.29410000000000003,
+          2.0241,
+          3.7541,
+          5.4841,
+          7.2141,
+          8.9441,
+          10.6741,
+          17.5941,
+          19.3241,
+          21.0541,
+          22.7841,
+          24.5141,
+          26.2441
+        ],
+        "observed_transits": 13,
+        "partial_centers_days": [],
+        "partial_edge_events": 0,
+        "partial_event_points": [],
+        "relative_period_error": {
+          "reason": null,
+          "value": 0.0022590599242784393
+        },
+        "retained_depth": {
+          "reason": null,
+          "value": 0.00017983440166996628
+        },
+        "retention_ratio": {
+          "reason": null,
+          "value": 0.7193376066798651
+        },
+        "status": "exact",
+        "total_in_transit_points": 223
+      },
+      "exact_after_injection_without_background_match": true,
+      "exact_recovery": true,
+      "full_centers_days": [
+        0.29410000000000003,
+        2.0241,
+        3.7541,
+        5.4841,
+        7.2141,
+        8.9441,
+        10.6741,
+        12.4041,
+        14.1341,
+        15.8641,
+        17.5941,
+        19.3241,
+        21.0541,
+        22.7841,
+        24.5141,
+        26.2441
+      ],
+      "full_event_points": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18,
+        18,
+        0,
+        0,
+        0,
+        18,
+        18,
+        18,
+        7,
+        18,
+        18
+      ],
+      "full_events": 16,
+      "grid_hash": "7661a15150c21d533405c0cedd03321db7f076c0f8bf6cfa4802eb11497c28ba",
+      "half_alias_searchable": true,
+      "half_period_peak": false,
+      "input_hash": "8dd72b93a42b2ec31a985d04fc71e82b23bc3379d5aa3ce25fa4279a6df15d49",
+      "mask_hash": "4e17b8469d3c3ab88d88ca49196abb046d66d4f90afcfac46156fdb32efc4575",
+      "mask_name": "central_block",
+      "maximum_timing_error_days": {
+        "reason": null,
+        "value": 0.04091820905142818
+      },
+      "missing_reasons": {
+        "background_match_reason": "not_applicable",
+        "background_search_reason": "not_applicable",
+        "reason": "not_applicable",
+        "seed": "not_applicable",
+        "sigma": "not_applicable"
+      },
+      "n_observed": 3104,
+      "n_original": 3741,
+      "observed_centers_days": [
+        0.29410000000000003,
+        2.0241,
+        3.7541,
+        5.4841,
+        7.2141,
+        8.9441,
+        10.6741,
+        17.5941,
+        19.3241,
+        21.0541,
+        22.7841,
+        24.5141,
+        26.2441
+      ],
+      "observed_transits": 13,
+      "original_bounds_days": [
+        0.0,
+        27.773027092740904
+      ],
+      "parent_prepared_hash": "958656d9b37a504d1cded853b1d043e88b123d6a82dd67771b20f02473825ac3",
+      "partial_centers_days": [],
+      "partial_edge_events": 0,
+      "partial_event_points": [],
+      "period_days": 1.7260918263309983,
+      "period_grid_hash": "7661a15150c21d533405c0cedd03321db7f076c0f8bf6cfa4802eb11497c28ba",
+      "pipeline_id": "rm_0p5d",
+      "power": 22.561342359425595,
+      "protocol_id": "transitstress-v1-cohort1",
+      "reason": null,
+      "relative_period_error": {
+        "reason": null,
+        "value": 0.0022590599242784393
+      },
+      "retained_depth": {
+        "reason": null,
+        "value": 0.00017983440166996628
+      },
+      "retention_ratio": {
+        "reason": null,
+        "value": 0.7193376066798651
+      },
+      "run_id": "204272966b38f832b0e5bb309302d5d303352da669455d6d15aba983b56afa2c",
+      "schema_version": 1,
+      "scientific_outcome": "exact",
+      "search": {
+        "depth": 0.0002364400537777804,
+        "depth_err": 3.60653979678898e-05,
+        "depth_snr": 6.555869811509933,
+        "duration_days": 0.08333333333333333,
+        "elapsed_seconds": 0.49014019999594893,
+        "epoch_days": 0.3118043959835963,
+        "failure_reason": null,
+        "grid_hash": "7661a15150c21d533405c0cedd03321db7f076c0f8bf6cfa4802eb11497c28ba",
+        "period_days": 1.7260918263309983,
+        "power": 22.561342359425595,
+        "status": "ok"
+      },
+      "search_seconds": 0.49014019999594893,
+      "seed": null,
+      "sigma": null,
+      "split": "development",
+      "status": "ok",
+      "total_in_transit_points": 223,
+      "true_depth": 0.00025,
+      "true_duration_days": 0.125,
+      "true_epoch_days": 0.29410000000000003,
+      "true_period_days": 1.73,
+      "units": {
+        "absolute_epoch": 2458325.3012118433,
+        "core_flux_unit": "dimensionless",
+        "core_time_unit": "days",
+        "normalization_factor": 18605.564453125,
+        "original_flux_unit": "e-/s",
+        "original_time_unit": "d",
+        "time_format": "jd",
+        "time_scale": "tdb"
+      }
+    },
+    {
+      "actual_removed_fraction": 0.1702753274525528,
+      "background_already_matches": false,
+      "background_binding": "8d9719e49f91f60ed048964fe0567914253cdeb355096c7322741127312105d9",
+      "background_match_reason": null,
+      "background_search_reason": null,
+      "case_id": "6bd4e804ffa7f720c4056a695b0b5a5e5db445e75778af0eb220bcee886af09e",
+      "case_kind": "injection",
+      "coverage_eligible": true,
+      "curve_id": "tic8195886-s0001-spoc-bc8c0a8db5c092d0",
+      "depth": 0.0006615647260123932,
+      "depth_err": 3.638456498913299e-05,
+      "depth_snr": 18.182565222642715,
+      "detrend_seconds": 0.007675600005313754,
+      "detrend_window_days": 1.5,
+      "double_alias_searchable": true,
+      "double_period_peak": false,
+      "duration_days": 0.25,
+      "elapsed_seconds": 0.4849326999974437,
+      "epoch_days": 4.23263772931693,
+      "evaluation": {
+        "background_already_matches": false,
+        "background_match_reason": null,
+        "coverage_eligible": true,
+        "double_alias_searchable": true,
+        "double_period_peak": false,
+        "exact_after_injection_without_background_match": false,
+        "exact_recovery": false,
+        "failure_reason": null,
+        "full_centers_days": [
+          0.29410000000000003,
+          2.0241,
+          3.7541,
+          5.4841,
+          7.2141,
+          8.9441,
+          10.6741,
+          12.4041,
+          14.1341,
+          15.8641,
+          17.5941,
+          19.3241,
+          21.0541,
+          22.7841,
+          24.5141,
+          26.2441
+        ],
+        "full_event_points": [
+          18,
+          18,
+          18,
+          18,
+          18,
+          18,
+          18,
+          0,
+          0,
+          0,
+          18,
+          18,
+          18,
+          7,
+          18,
+          18
+        ],
+        "full_events": 16,
+        "half_alias_searchable": true,
+        "half_period_peak": false,
+        "maximum_timing_error_days": {
+          "reason": null,
+          "value": 3.1419775461742745
+        },
+        "observed_centers_days": [
+          0.29410000000000003,
+          2.0241,
+          3.7541,
+          5.4841,
+          7.2141,
+          8.9441,
+          10.6741,
+          17.5941,
+          19.3241,
+          21.0541,
+          22.7841,
+          24.5141,
+          26.2441
+        ],
+        "observed_transits": 13,
+        "partial_centers_days": [],
+        "partial_edge_events": 0,
+        "partial_event_points": [],
+        "relative_period_error": {
+          "reason": null,
+          "value": 2.8465201959262703
+        },
+        "retained_depth": {
+          "reason": null,
+          "value": 0.00020832807699900068
+        },
+        "retention_ratio": {
+          "reason": null,
+          "value": 0.8333123079960028
+        },
+        "status": "other_peak",
+        "total_in_transit_points": 223
+      },
+      "exact_after_injection_without_background_match": false,
+      "exact_recovery": false,
+      "full_centers_days": [
+        0.29410000000000003,
+        2.0241,
+        3.7541,
+        5.4841,
+        7.2141,
+        8.9441,
+        10.6741,
+        12.4041,
+        14.1341,
+        15.8641,
+        17.5941,
+        19.3241,
+        21.0541,
+        22.7841,
+        24.5141,
+        26.2441
+      ],
+      "full_event_points": [
+        18,
+        18,
+        18,
+        18,
+        18,
+        18,
+        18,
+        0,
+        0,
+        0,
+        18,
+        18,
+        18,
+        7,
+        18,
+        18
+      ],
+      "full_events": 16,
+      "grid_hash": "7661a15150c21d533405c0cedd03321db7f076c0f8bf6cfa4802eb11497c28ba",
+      "half_alias_searchable": true,
+      "half_period_peak": false,
+      "input_hash": "8dd72b93a42b2ec31a985d04fc71e82b23bc3379d5aa3ce25fa4279a6df15d49",
+      "mask_hash": "4e17b8469d3c3ab88d88ca49196abb046d66d4f90afcfac46156fdb32efc4575",
+      "mask_name": "central_block",
+      "maximum_timing_error_days": {
+        "reason": null,
+        "value": 3.1419775461742745
+      },
+      "missing_reasons": {
+        "background_match_reason": "not_applicable",
+        "background_search_reason": "not_applicable",
+        "reason": "not_applicable",
+        "seed": "not_applicable",
+        "sigma": "not_applicable"
+      },
+      "n_observed": 3104,
+      "n_original": 3741,
+      "observed_centers_days": [
+        0.29410000000000003,
+        2.0241,
+        3.7541,
+        5.4841,
+        7.2141,
+        8.9441,
+        10.6741,
+        17.5941,
+        19.3241,
+        21.0541,
+        22.7841,
+        24.5141,
+        26.2441
+      ],
+      "observed_transits": 13,
+      "original_bounds_days": [
+        0.0,
+        27.773027092740904
+      ],
+      "parent_prepared_hash": "958656d9b37a504d1cded853b1d043e88b123d6a82dd67771b20f02473825ac3",
+      "partial_centers_days": [],
+      "partial_edge_events": 0,
+      "partial_event_points": [],
+      "period_days": 6.654479938952448,
+      "period_grid_hash": "7661a15150c21d533405c0cedd03321db7f076c0f8bf6cfa4802eb11497c28ba",
+      "pipeline_id": "rm_1p5d",
+      "power": 173.38729640710935,
+      "protocol_id": "transitstress-v1-cohort1",
+      "reason": null,
+      "relative_period_error": {
+        "reason": null,
+        "value": 2.8465201959262703
+      },
+      "retained_depth": {
+        "reason": null,
+        "value": 0.00020832807699900068
+      },
+      "retention_ratio": {
+        "reason": null,
+        "value": 0.8333123079960028
+      },
+      "run_id": "204272966b38f832b0e5bb309302d5d303352da669455d6d15aba983b56afa2c",
+      "schema_version": 1,
+      "scientific_outcome": "other_peak",
+      "search": {
+        "depth": 0.0006615647260123932,
+        "depth_err": 3.638456498913299e-05,
+        "depth_snr": 18.182565222642715,
+        "duration_days": 0.25,
+        "elapsed_seconds": 0.4849326999974437,
+        "epoch_days": 4.23263772931693,
+        "failure_reason": null,
+        "grid_hash": "7661a15150c21d533405c0cedd03321db7f076c0f8bf6cfa4802eb11497c28ba",
+        "period_days": 6.654479938952448,
+        "power": 173.38729640710935,
+        "status": "ok"
+      },
+      "search_seconds": 0.4849326999974437,
+      "seed": null,
+      "sigma": null,
+      "split": "development",
+      "status": "ok",
+      "total_in_transit_points": 223,
+      "true_depth": 0.00025,
+      "true_duration_days": 0.125,
+      "true_epoch_days": 0.29410000000000003,
+      "true_period_days": 1.73,
+      "units": {
+        "absolute_epoch": 2458325.3012118433,
+        "core_flux_unit": "dimensionless",
+        "core_time_unit": "days",
+        "normalization_factor": 18605.564453125,
+        "original_flux_unit": "e-/s",
+        "original_time_unit": "d",
+        "time_format": "jd",
+        "time_scale": "tdb"
+      }
+    }
+  ],
+  "numerical": {
+    "arrays": {
+      "background_flux": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "input_flux": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "input_flux_err": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "rm_0p5d_bls_depth": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_0p5d_bls_depth_err": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_0p5d_bls_depth_err_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_0p5d_bls_depth_snr": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_0p5d_bls_depth_snr_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_0p5d_bls_depth_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_0p5d_bls_duration_days": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_0p5d_bls_duration_days_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_0p5d_bls_epoch_days": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_0p5d_bls_epoch_days_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_0p5d_bls_period_days": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_0p5d_bls_period_days_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_0p5d_bls_power": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_0p5d_bls_power_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_0p5d_flux": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "rm_0p5d_flux_err": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "rm_0p5d_trend": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "rm_1p5d_bls_depth": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_1p5d_bls_depth_err": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_1p5d_bls_depth_err_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_1p5d_bls_depth_snr": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_1p5d_bls_depth_snr_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_1p5d_bls_depth_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_1p5d_bls_duration_days": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_1p5d_bls_duration_days_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_1p5d_bls_epoch_days": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_1p5d_bls_epoch_days_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_1p5d_bls_period_days": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_1p5d_bls_period_days_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_1p5d_bls_power": {
+        "dtype": "<f8",
+        "length": 22832
+      },
+      "rm_1p5d_bls_power_valid": {
+        "dtype": "|u1",
+        "length": 22832
+      },
+      "rm_1p5d_flux": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "rm_1p5d_flux_err": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "rm_1p5d_trend": {
+        "dtype": "<f8",
+        "length": 3104
+      },
+      "time_days": {
+        "dtype": "<f8",
+        "length": 3104
+      }
+    },
+    "numeric_hash": "9efee72cad8ca91e98161206aa1094835aed8c0e6b30f5937d8ea6077ebaaa2e",
+    "transport_sha256": "ac0cdf6a8a68c037da5f307d900f45bd93381cf026367a5fdd78752e52628abb"
+  },
+  "run_id": "204272966b38f832b0e5bb309302d5d303352da669455d6d15aba983b56afa2c",
+  "source_case_sha256": "b3223c1162f06478b8e7daca85448f8852bcd36a7dadc0ae7cfbe872268663e7",
+  "source_run_sha256": "669ea3197dcc06991f80be466d2789ac6f69d4c07b144bba3030c85d65120d05",
+  "selection": "First planned development injection with central_block; chosen for visible gaps, not recovery outcome."
+}

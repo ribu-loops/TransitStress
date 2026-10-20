@@ -8,3 +8,11 @@ gatherUsageStats = false
 
 [client]
 showErrorDetails = "none"
+
+[theme]
+base = "light"
+primaryColor = "#2457C5"
+backgroundColor = "#F7F8FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#172033"
+font = "sans-serif"
