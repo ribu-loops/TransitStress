@@ -3,11 +3,12 @@
 import math
 import os
 import tomllib
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass, fields, is_dataclass, replace
 from pathlib import Path
 from typing import get_args, get_origin, get_type_hints
 
 from transitstress.errors import ConfigurationError
+from transitstress.provenance import canonical_hash
 
 
 def _finite(value: object) -> bool:
@@ -264,6 +265,15 @@ def load_config(path: Path) -> ProtocolConfig:
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
         raise ConfigurationError("config: unreadable or invalid TOML; check the file") from error
     return validate_config(raw)
+
+
+def eligibility_reference_hash(config: ProtocolConfig) -> str:
+    """Compare original T03 settings while normalizing only the gate-state flag.
+
+    Full run/freeze identity still hashes the actual flag and exact config file.
+    This preserves the original saved eligibility evidence when G2 later freezes.
+    """
+    return canonical_hash(replace(config, frozen=False))
 
 
 def app_mode() -> str:

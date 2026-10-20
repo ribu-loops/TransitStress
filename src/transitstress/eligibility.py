@@ -8,7 +8,7 @@ import numpy as np
 
 from transitstress import acquisition as acq
 from transitstress import cohort
-from transitstress.config import ProtocolConfig
+from transitstress.config import ProtocolConfig, eligibility_reference_hash
 from transitstress.errors import DataValidationError
 from transitstress.injection import family_specs
 from transitstress.masking import make_observation_mask, mask_record
@@ -71,7 +71,7 @@ def enumerate_cases(
     """Enumerate IDs/specifications only; never execute injections or searches."""
     acq.require_final_manifest(manifest)
     acq.validate_manifest(manifest, config)
-    if manifest.get("t03_settings_hash") != canonical_hash(config):
+    if manifest.get("t03_settings_hash") != eligibility_reference_hash(config):
         raise DataValidationError(
             "case settings: differ from final eligibility; restore saved settings"
         )

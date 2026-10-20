@@ -37,6 +37,30 @@ def doctor(config_path: Path) -> dict[str, object]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="TransitStress environment and configuration")
     commands = parser.add_subparsers(dest="command", required=True)
+    batch = commands.add_parser("experiment", help="Offline development paired experiment")
+    batch.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
+    batch.add_argument("--manifest", type=Path, default=Path("data/manifest.json"))
+    batch.add_argument("--split", choices=("development", "evaluation"), required=True)
+    batch.add_argument("--output", type=Path)
+    batch.add_argument("--resume", type=Path)
+    analysis = commands.add_parser("analyze", help="Validate and summarize completed rows")
+    analysis.add_argument("--run", type=Path, required=True)
+    artifact = commands.add_parser("validate-artifact", help="Verify run IDs, schema and checksums")
+    artifact.add_argument("--path", type=Path, required=True)
+    case = commands.add_parser("case", help="Exploratory single paired injection, no Streamlit")
+    case.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
+    source = case.add_mutually_exclusive_group(required=True)
+    source.add_argument("--csv", type=str)
+    source.add_argument("--built-in", choices=("8195886", "8196058"))
+    case.add_argument("--confirm-days-linear-units", action="store_true")
+    case.add_argument("--period-days", type=float, required=True)
+    case.add_argument("--depth-ppm", type=float, required=True)
+    case.add_argument("--duration-hours", type=float, required=True)
+    case.add_argument("--epoch-fraction", type=float, required=True)
+    case.add_argument(
+        "--mask", choices=("original", "random_missing", "central_block"), default="original"
+    )
+    case.add_argument("--output", type=Path, required=True)
     check = commands.add_parser("doctor", help="Check local setup without network access")
     check.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
     sanity = commands.add_parser("sanity", help="Offline broad known-signal search; no benchmark")
@@ -71,6 +95,61 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
+        if args.command == "case":
+            from transitstress.workbench import single_case
+
+            report = single_case(
+                load_config(args.config),
+                repository=Path.cwd(),
+                output=args.output,
+                period_days=args.period_days,
+                depth_ppm=args.depth_ppm,
+                duration_hours=args.duration_hours,
+                epoch_fraction=args.epoch_fraction,
+                mask_name=args.mask,
+                built_in=args.built_in,
+                csv_path=args.csv,
+                confirm_days_and_linear_units=args.confirm_days_linear_units,
+            )
+            print(json.dumps({k: report[k] for k in ("run_id", "status", "actual_rows")}))
+            return 0 if report["status"] == "complete" and _no_technical_errors(args.output) else 2
+        if args.command == "experiment":
+            from transitstress.acquisition import utc_now
+            from transitstress.experiment import experiment
+            from transitstress.reporting import analyze
+
+            if args.resume and args.output:
+                raise TransitStressError("output: ambiguous; use --resume or --output")
+            output = (
+                args.resume
+                or args.output
+                or Path("runs") / ("development_" + utc_now().replace(":", ""))
+            )
+            report = experiment(
+                load_config(args.config),
+                repository=Path.cwd(),
+                config_path=args.config,
+                manifest_path=args.manifest,
+                cache=Path(".cache/transitstress"),
+                output=output,
+                split=args.split,
+                resume=args.resume is not None,
+                progress=lambda done, total: print(f"Completed cases {done}/{total}", flush=True),
+            )
+            if report["status"] == "complete":
+                analyze(output)
+            print(json.dumps({k: report[k] for k in ("run_id", "status", "actual_rows")}))
+            return 0 if report["status"] == "complete" and _no_technical_errors(output) else 2
+        if args.command in ("analyze", "validate-artifact"):
+            from transitstress.reporting import analyze, validate_artifact
+
+            if args.command == "analyze":
+                report = analyze(args.run)
+                print(json.dumps({k: report[k] for k in ("run_id", "row_counts", "statuses")}))
+            else:
+                report, rows = validate_artifact(args.path)
+                print(json.dumps(dict(run_id=report["run_id"], validated_rows=len(rows))))
+            return 0
         if args.command == "sanity":
             from transitstress.sanity import run_sanity
 
@@ -124,5 +203,17 @@ def main(argv: list[str] | None = None) -> int:
     except (TransitStressError, importlib.metadata.PackageNotFoundError) as error:
         print(f"{args.command}: {error}", file=sys.stderr)
         return 2
+    except OSError:
+        print(
+            f"{args.command}: local file operation failed; preserve output and check access",
+            file=sys.stderr,
+        )
+        return 2
     print(json.dumps(report, indent=2, allow_nan=False))
     return 0 if report["python_supported"] else 1
+
+
+def _no_technical_errors(root: Path) -> bool:
+    from transitstress.artifacts import json_read
+
+    return all(row["status"] == "ok" for row in json_read(root, "results.json")["rows"])

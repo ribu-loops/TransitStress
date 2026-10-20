@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from transitstress import acquisition as acq
-from transitstress.config import ProtocolConfig
+from transitstress.config import ProtocolConfig, eligibility_reference_hash
 from transitstress.detrending import detrend
 from transitstress.eligibility import support_evidence
 from transitstress.errors import DataValidationError
@@ -78,7 +78,7 @@ def run_sanity(
     evidence = acq.read_json(manifest_path.parent, "t03_eligibility.json")
     if canonical_hash(evidence) != manifest["t03_evidence_hash"] or evidence.get(
         "settings_hash"
-    ) != canonical_hash(config):
+    ) != eligibility_reference_hash(config):
         raise DataValidationError("sanity eligibility: changed evidence/settings; restore T03 pins")
     product = next(p for p in manifest["products"] if p["role"] == "sanity")
     content = acq.cached_source(cache_root, product)
