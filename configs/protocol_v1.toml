@@ -2,7 +2,7 @@
 # Actual product manifest and per-star grids are generated before G2.
 schema_version = 2
 protocol_id = "transitstress-v1-cohort1"
-frozen = false
+frozen = true
 master_seed = 20261019
 
 [selection]
