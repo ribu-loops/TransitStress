@@ -71,7 +71,8 @@ def scenario(tess_factory, monkeypatch):
     from transitstress.acquisition import _validate_manifest_fields
 
     monkeypatch.setattr("transitstress.acquisition.validate_manifest", _validate_manifest_fields)
-    config = load_config(Path("configs/protocol_v1.toml"))
+    # Build provisional data before exercising final/frozen lifecycle behavior.
+    config = replace(load_config(Path("configs/protocol_v1.toml")), frozen=False)
     # TIC 1 fails the 24-day criterion; seven later TICs pass. TIC 10 would be next.
     tics = [10, 8, 1, 3, SANITY, 2, 7, 6, 5, 4]
     observations = [observation(t) for t in tics]

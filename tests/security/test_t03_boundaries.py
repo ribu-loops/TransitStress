@@ -107,7 +107,22 @@ def test_final_flags_alone_do_not_allow_benchmark_use():
 def test_finalize_cli_failure_is_actionable_and_nonzero(tmp_path, monkeypatch, capsys):
     from transitstress.cli import main
 
-    config = Path("configs/protocol_v1.toml").resolve()
+    # Exercise missing inputs after the unfrozen gate, through the real parser.
+    content = Path("configs/protocol_v1.toml").read_bytes()
+    config = tmp_path / "unfrozen.toml"
+    config.write_bytes(content.replace(b"frozen = true", b"frozen = false"))
     monkeypatch.chdir(tmp_path)
     assert main(["finalize", "--config", str(config)]) == 2
     assert "missing/corrupt" in capsys.readouterr().err
+
+
+def test_finalize_cli_frozen_refusal_is_actionable_and_nonzero(tmp_path, monkeypatch, capsys):
+    from transitstress.cli import main
+
+    content = Path("configs/protocol_v1.toml").read_bytes()
+    config = tmp_path / "frozen.toml"
+    config.write_bytes(content.replace(b"frozen = false", b"frozen = true"))
+    monkeypatch.chdir(tmp_path)
+    assert main(["finalize", "--config", str(config)]) == 2
+    assert "frozen configuration; do not alter eligibility" in capsys.readouterr().err
+    assert set(tmp_path.iterdir()) == {config}

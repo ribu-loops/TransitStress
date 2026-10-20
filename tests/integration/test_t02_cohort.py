@@ -32,7 +32,8 @@ EXPECTED = [
 
 @pytest.fixture
 def setup_cohort(tess_factory):
-    config = load_config(Path("configs/protocol_v1.toml"))
+    # Fresh provisional cohorts belong to the unfrozen acquisition lifecycle.
+    config = replace(load_config(Path("configs/protocol_v1.toml")), frozen=False)
     record = cohort.load_cohort(config)
     sources, observations, products = {}, {}, {}
     for pin in record["products"]:
@@ -398,7 +399,8 @@ def test_migrated_valid_cache_hits_keep_five_reservations(tmp_path, setup_cohort
 
 
 def test_actual_rejection_migration_survives_repeated_metadata_failure(tmp_path):
-    config = load_config(Path("configs/protocol_v1.toml"))
+    # Migration precedes selection/finalization, independently of the repo gate.
+    config = replace(load_config(Path("configs/protocol_v1.toml")), frozen=False)
     data = tmp_path / "data"
     data.mkdir()
     for name in cohort.LEGACY_HASHES:
