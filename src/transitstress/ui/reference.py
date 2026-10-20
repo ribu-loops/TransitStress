@@ -7,7 +7,7 @@ import streamlit as st
 from transitstress.artifacts import json_read, numeric_read
 from transitstress.config import app_mode
 from transitstress.errors import TransitStressError
-from transitstress.ui.charts import PIPELINES, folded, periodogram, timeline
+from transitstress.ui.charts import PIPELINES, baseline_context, folded, periodogram, timeline
 
 BUNDLE = Path(__file__).resolve().parents[3] / "demo" / "t08"
 
@@ -41,6 +41,11 @@ def result_cards(rows: list[dict]) -> None:
             st.write(f"Retention ratio: {row['retention_ratio']['value']:.3f}")
             match = "yes" if row["background_already_matches"] else "no"
             st.write(f"Background already matches: {match}")
+
+
+def reset_time_range(bounds: tuple[float, float]) -> None:
+    """Reset display axes only; no numerical settings or saved results change."""
+    st.session_state["timeline_range"] = bounds
 
 
 def main() -> None:
@@ -102,16 +107,50 @@ def main() -> None:
         )
     st.subheader("Inspect the paired evidence")
     view = st.radio(
-        "Timeline view", ["Prepared & injected", "Fitted trends", "Processed flux"], horizontal=True
+        "Timeline view", ["Processed flux", "Prepared & injected", "Fitted trends"], horizontal=True
+    )
+    bounds = row["original_bounds_days"]
+    if "timeline_range" not in st.session_state:
+        st.session_state["timeline_range"] = tuple(bounds)
+    selected = st.slider(
+        "Displayed time range (relative days)",
+        min_value=float(bounds[0]),
+        max_value=float(bounds[1]),
+        value=None,
+        step=0.01,
+        format="%.2f days",
+        key="timeline_range",
+        help="Move both handles to inspect an individual transit window. Only display axes change.",
+    )
+    st.button("Reset to full baseline", on_click=reset_time_range, args=(tuple(bounds),))
+    if selected[0] >= selected[1]:
+        st.warning(
+            "Displayed time range: choose an end later than the start, or reset to full baseline."
+        )
+        st.stop()
+    st.caption(
+        "Full-baseline context · injected input · normalized flux is dimensionless. "
+        "Blue shading marks the displayed time range below."
     )
     st.plotly_chart(
-        timeline(arrays, view, row["original_bounds_days"]),
+        baseline_context(arrays, bounds, selected),
+        width="stretch",
+        config={"displayModeBar": False},
+    )
+    layout = "Stacked A/B"
+    if view == "Processed flux":
+        layout = st.radio("Processed-flux layout", ["Stacked A/B", "Overlay"], horizontal=True)
+    st.write(f"Displayed time range: {selected[0]:.2f}–{selected[1]:.2f} relative days")
+    st.plotly_chart(
+        timeline(arrays, view, list(selected), layout),
         width="stretch",
         config={"displayModeBar": False},
     )
     st.caption(
-        "All 3,104 retained points shown. No interpolation across missing blocks. "
-        "Timeline views share time limits; A and B share one flux scale within each view."
+        "All 3,104 retained samples per configuration remain in the chart; the time-range "
+        "zoom changes only the displayed interval. No smoothing, averaging, outlier clipping, "
+        "interpolation or downsampling. A/B panels share time and flux limits, including "
+        "all outliers; observation gaps align. Reset restores the full baseline."
     )
     with st.expander("Broad BLS and fitted-period folds"):
         st.write(

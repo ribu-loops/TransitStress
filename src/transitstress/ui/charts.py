@@ -3,10 +3,11 @@
 import numpy as np
 import plotly.graph_objects as go
 from numpy.typing import NDArray
+from plotly.subplots import make_subplots
 
 PIPELINES = (
-    ("rm_0p5d", "A / 0.5 d", "#2457C5", "solid"),
-    ("rm_1p5d", "B / 1.5 d", "#A94D00", "dash"),
+    ("rm_0p5d", "A · 0.5-day detrending window", "#2457C5", "solid"),
+    ("rm_1p5d", "B · 1.5-day detrending window", "#A94D00", "dash"),
 )
 
 
@@ -44,8 +45,90 @@ def base_chart(x_label: str, y_label: str) -> go.Figure:
     return fig
 
 
-def timeline(arrays: dict[str, NDArray], view: str, bounds: list[float]) -> go.Figure:
+def processed_chart(
+    arrays: dict[str, NDArray], bounds: list[float], layout: str = "Stacked A/B"
+) -> go.Figure:
+    """Keep every sample; zoom changes only axes, with identical A/B limits."""
+    if layout not in {"Stacked A/B", "Overlay"}:
+        raise ValueError("processed layout: unsupported; choose Stacked A/B or Overlay")
+    stacked = layout == "Stacked A/B"
+    fig = (
+        make_subplots(
+            rows=2,
+            cols=1,
+            shared_xaxes=True,
+            shared_yaxes=True,
+            vertical_spacing=0.18,
+            subplot_titles=[p[1] for p in PIPELINES],
+        )
+        if stacked
+        else go.Figure()
+    )
+    fig.update_layout(base_chart("Relative time (days)", "Normalized flux (dimensionless)").layout)
+    low = min(float(arrays[f"{p[0]}_flux"].min()) for p in PIPELINES)
+    high = max(float(arrays[f"{p[0]}_flux"].max()) for p in PIPELINES)
+    padding = max((high - low) * 0.05, 1e-6)
+    for i, (pipe, label, color, _) in enumerate(PIPELINES, 1):
+        trace = go.Scatter(
+            x=arrays["time_days"],
+            y=arrays[f"{pipe}_flux"],
+            mode="markers",
+            name=label,
+            marker=dict(
+                size=3, opacity=0.45, color=color, symbol="circle" if i == 1 else "diamond"
+            ),
+            hovertemplate=(
+                "Time: %{x:.5f} days<br>Normalized flux: %{y:.7f}<extra>%{fullData.name}</extra>"
+            ),
+        )
+        if stacked:
+            fig.add_trace(trace, row=i, col=1)
+        else:
+            fig.add_trace(trace)
+    fig.update_xaxes(range=bounds, title_text="Relative time (days)", showticklabels=True)
+    fig.update_yaxes(
+        range=[low - padding, high + padding],
+        title_text="Normalized flux (dimensionless)",
+        fixedrange=True,
+    )
+    if stacked:
+        fig.update_yaxes(matches="y", row=2, col=1)
+    fig.update_layout(
+        height=660 if stacked else 490,
+        showlegend=not stacked,
+        margin=dict(l=75, r=16, t=40 if stacked else 16, b=64),
+    )
+    fig.update_annotations(font_size=14)
+    return fig
+
+
+def baseline_context(
+    arrays: dict[str, NDArray], baseline: list[float], selected: tuple[float, float]
+) -> go.Figure:
+    """Always show the full retained injected input as unsmoothed context."""
+    fig = base_chart("Relative time (days)", "Normalized flux")
+    fig.add_scatter(
+        x=arrays["time_days"],
+        y=arrays["input_flux"],
+        mode="markers",
+        name="Injected input · full baseline",
+        marker=dict(size=2, opacity=0.45, color="#687386"),
+    )
+    fig.add_vrect(x0=selected[0], x1=selected[1], fillcolor="#2457C5", opacity=0.08, line_width=0)
+    fig.update_xaxes(range=baseline)
+    fig.update_layout(height=220, showlegend=False, margin=dict(l=75, r=16, t=8, b=48))
+    return fig
+
+
+def timeline(
+    arrays: dict[str, NDArray],
+    view: str,
+    bounds: list[float],
+    processed_layout: str = "Stacked A/B",
+) -> go.Figure:
     """One common time/flux scale; lines break at gaps and points stay points."""
+    if view == "Processed flux":
+        return processed_chart(arrays, bounds, processed_layout)
     fig = base_chart("Relative time (days)", "Normalized flux (dimensionless)")
     t = arrays["time_days"]
     if view == "Prepared & injected":
@@ -110,7 +193,7 @@ def folded(arrays: dict[str, NDArray], rows: list[dict]) -> go.Figure:
             x=phase,
             y=arrays[f"{pipe}_flux"],
             mode="markers",
-            name=f"{label}: {period:.6f} d",
+            name=f"{label}<br>Fitted period: {period:.6f} d",
             marker=dict(size=3, color=color, symbol="circle" if pipe == "rm_0p5d" else "x"),
         )
     fig.update_layout(height=460)

@@ -32,7 +32,8 @@ def test_reference_has_no_input_or_execution_surface(mode, monkeypatch):
     monkeypatch.setenv("T08_PRIVATE_CANARY", "private-canary-t08")
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
     assert not at.exception
-    assert not at.button and not at.file_uploader
+    assert [b.label for b in at.button] == ["Reset to full baseline"]
+    assert not at.file_uploader
     text = " ".join(m.value for m in at.markdown)
     assert "private-canary-t08" not in text
     assert "Precomputed development example" in at.info[0].value
