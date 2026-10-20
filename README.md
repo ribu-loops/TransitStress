@@ -3,7 +3,8 @@
 Local TESS transit preprocessing robustness experiment under development.
 Version 0.1.0 is a package version, not a public release. T04 adds blind
 detrending/BLS and a separately labelled real Pi Mensae sanity check to the
-pinned preparation/injection/mask primitives. Independent G1 review is pending;
+pinned preparation/injection/mask primitives. Independent G1 review and the
+separate artifact-reader R1 re-review record a combined G1 PASS;
 the evaluator, benchmark runs, dashboard and release are not complete.
 
 Read `AUTHOR_GUIDE.md`, `STATE.md`, `AGENTS.md` and `SECURITY.md` before continuing.
