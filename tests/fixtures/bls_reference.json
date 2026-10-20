@@ -1,0 +1,13 @@
+{
+  "kind": "independently_written_synthetic_fixture_not_TESS",
+  "baseline_days": 27.0,
+  "cadence_days": 0.006944444444444444,
+  "periods_days": [2.9137, 4.28791],
+  "epoch_days": 0.613,
+  "duration_days": 0.125,
+  "depth": 0.01,
+  "error": 0.0005,
+  "relative_period_tolerance": 0.01,
+  "negative": "unity flux, no injected truth; top peak alone is not evidence",
+  "construction": "Enumerate centers from epoch + integer*period, subtract depth on each half-open center +/- duration/2 interval. Do not call production injection."
+}

@@ -30,7 +30,7 @@ def doctor(config_path: Path) -> dict[str, object]:
         "manifest_available": Path("data/manifest.json").is_file(),
         "demo_available": Path("demo").is_dir(),
         "cache_available": Path(".cache/transitstress").is_dir(),
-        "science": ("T03 injection/masks/time support; doctor performs no acquisition or search"),
+        "science": ("T04 blind detrending/BLS/sanity; doctor performs no acquisition or search"),
     }
 
 
@@ -39,6 +39,10 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("doctor", help="Check local setup without network access")
     check.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
+    sanity = commands.add_parser("sanity", help="Offline broad known-signal search; no benchmark")
+    sanity.add_argument("--config", type=Path, default=Path("configs/protocol_v1.toml"))
+    sanity.add_argument("--manifest", type=Path, default=Path("data/manifest.json"))
+    sanity.add_argument("--output", type=Path, default=Path("runs/sanity"))
     finalize = commands.add_parser(
         "finalize", help="Offline T03 support validation and final roles"
     )
@@ -67,6 +71,29 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
+        if args.command == "sanity":
+            from transitstress.sanity import run_sanity
+
+            report = run_sanity(
+                load_config(args.config),
+                manifest_path=args.manifest,
+                cache_root=Path(".cache/transitstress"),
+                output_root=args.output,
+            )
+            print(
+                json.dumps(
+                    {
+                        "kind": report["kind"],
+                        "status": report["status"],
+                        "grid": report["grid"],
+                        "searches": report["searches"],
+                        "post_search_comparison": report["post_search_comparison"],
+                    },
+                    indent=2,
+                    allow_nan=False,
+                )
+            )
+            return 0 if report["status"] == "complete" else 2
         if args.command == "finalize":
             from transitstress.eligibility import finalize_eligibility
 
