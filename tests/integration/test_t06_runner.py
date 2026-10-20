@@ -390,13 +390,15 @@ def test_csv_in_memory_and_synthetic_built_in_do_not_persist_upload(tmp_path, fi
 
 
 def test_evaluation_execution_refused_before_any_source_loading(tmp_path, monkeypatch):
+    from dataclasses import replace
+
     from transitstress.experiment import experiment
 
     def forbidden(*args, **kwargs):
         raise AssertionError("evaluation execution entered without freeze")
 
     monkeypatch.setattr("transitstress.experiment.load_split", forbidden)
-    config = load_config(Path("configs/protocol_v1.toml"))
+    config = replace(load_config(Path("configs/protocol_v1.toml")), frozen=False)
     with pytest.raises(DataValidationError, match="G2"):
         experiment(
             config,

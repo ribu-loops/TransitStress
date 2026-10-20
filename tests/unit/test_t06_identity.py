@@ -80,12 +80,15 @@ def test_paths_and_transport_timestamps_do_not_enter_identity(repository):
     assert "execution_commit" not in a
 
 
-def test_gate_flag_keeps_original_eligibility_pins_but_science_changes_do_not():
+@pytest.mark.parametrize("frozen", [False, True])
+def test_gate_flag_keeps_original_eligibility_pins_but_science_changes_do_not(frozen):
     from dataclasses import replace
 
     from transitstress.config import eligibility_reference_hash, load_config
 
-    config = load_config(Path("configs/protocol_v1.toml"))
-    assert eligibility_reference_hash(config) == canonical_hash(config)
-    assert eligibility_reference_hash(replace(config, frozen=True)) == canonical_hash(config)
-    assert eligibility_reference_hash(replace(config, master_seed=1)) != canonical_hash(config)
+    unfrozen = replace(load_config(Path("configs/protocol_v1.toml")), frozen=False)
+    config = replace(unfrozen, frozen=frozen)
+    reference = canonical_hash(unfrozen)
+    assert eligibility_reference_hash(config) == reference
+    assert (canonical_hash(config) == reference) is (not frozen)
+    assert eligibility_reference_hash(replace(config, master_seed=1)) != reference
