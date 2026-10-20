@@ -1,4 +1,4 @@
-"""Packaged development result reference, awaiting explicit T08 author approval."""
+"""Approved T08 packaged development presentation; read-only demo entry point."""
 
 from pathlib import Path
 
@@ -61,8 +61,8 @@ def main() -> None:
         "Compare two detrending configurations on a signal deliberately added to a light curve."
     )
     st.info(
-        "Precomputed development example. No upload or new search on this reference screen. "
-        "The local workbench is planned for T09, after visual approval."
+        "Precomputed development example. Demo mode denies uploads and new computation. "
+        "For the local workbench, set TRANSITSTRESS_MODE=local and launch on 127.0.0.1."
     )
     try:
         meta, arrays = load_example()
@@ -215,6 +215,6 @@ def main() -> None:
         "Real backgrounds are not verified negatives; no calibrated false-alarm rate."
     )
     st.caption(
-        "T08 reference awaits author approval. G3/G4 pending. "
-        "T09 adds controls and evidence export."
+        "T08 R1 reference approved by the author. G3/G4 pending. "
+        "Local exploratory controls and evidence export require local mode."
     )

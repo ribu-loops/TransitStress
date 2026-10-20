@@ -30,7 +30,15 @@ def close_unused_loops():
 def test_reference_has_no_input_or_execution_surface(mode, monkeypatch):
     monkeypatch.setenv("TRANSITSTRESS_MODE", mode)
     monkeypatch.setenv("T08_PRIVATE_CANARY", "private-canary-t08")
-    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
+    # The reference stays read-only in either mode; local app routing now has
+    # the separate, explicitly tested T09 workbench surface.
+    at = (
+        AppTest.from_file(str(ROOT / "app.py"), default_timeout=30)
+        if mode == "demo"
+        else AppTest.from_string(
+            "from transitstress.ui.reference import main\nmain()", default_timeout=30
+        )
+    ).run()
     assert not at.exception
     assert [b.label for b in at.button] == ["Reset to full baseline"]
     assert not at.file_uploader

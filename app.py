@@ -1,5 +1,5 @@
-"""T08 read-only visual reference. T09 adds interactive execution."""
+"""Default read-only demo; explicit local mode enables the bounded workbench."""
 
-from transitstress.ui.reference import main
+from transitstress.ui.local import main
 
 main()
