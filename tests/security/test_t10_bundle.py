@@ -149,3 +149,67 @@ def test_public_cache_copies_and_revalidates_every_content_identity(monkeypatch,
     with pytest.raises(DataValidationError, match="missing or corrupt"):
         public_cache.public_bundle()
     public_cache.validated_public.clear()
+
+
+def test_imported_validator_change_cannot_reuse_warm_public_cache(monkeypatch):
+    public_cache.validated_public.clear()
+    try:
+        assert len(public_cache.public_bundle().rows) == 390
+        calls = []
+
+        def reject(*args, **kwargs):
+            calls.append(True)
+            raise DataValidationError("changed validator rejects")
+
+        # Report reproduction: same artifact identity, different live validator.
+        monkeypatch.setattr(bundle_module, "validate_rows", reject)
+        with pytest.raises(DataValidationError) as rejected:
+            public_cache.public_bundle()
+        assert str(rejected.value.__cause__) == "changed validator rejects"
+        assert calls == [True]
+    finally:
+        public_cache.validated_public.clear()
+
+
+@pytest.mark.parametrize("module", ["artifacts", "provenance", "acquisition", "models", "errors"])
+def test_validator_dependency_source_change_revalidates(monkeypatch, module):
+    """Simulate changed disk bytes without editing protected scientific source."""
+    original_read = Path.read_bytes
+    target = ROOT / f"src/transitstress/{module}.py"
+    original_load = bundle_module.load_bundle
+    calls = []
+
+    def observed_load(*args, **kwargs):
+        calls.append(True)
+        return original_load(*args, **kwargs)
+
+    monkeypatch.setattr(bundle_module, "load_bundle", observed_load)
+    public_cache.validated_public.clear()
+    try:
+        public_cache.public_bundle()
+        public_cache.public_bundle()
+        assert len(calls) == 1
+
+        def changed_read(path):
+            raw = original_read(path)
+            return raw + b"\n# changed validator source\n" if path == target else raw
+
+        monkeypatch.setattr(Path, "read_bytes", changed_read)
+        public_cache.public_bundle()
+        assert len(calls) == 2
+    finally:
+        public_cache.validated_public.clear()
+
+
+def test_changed_nested_validator_schema_invalidates_cache(monkeypatch):
+    from transitstress import artifacts
+
+    public_cache.validated_public.clear()
+    try:
+        public_cache.public_bundle()
+        # In-place mutation keeps dict identity; a new schema still must validate.
+        monkeypatch.setitem(artifacts.CSV_ENUMS, "split", ("development",))
+        with pytest.raises(DataValidationError):
+            public_cache.public_bundle()
+    finally:
+        public_cache.validated_public.clear()
