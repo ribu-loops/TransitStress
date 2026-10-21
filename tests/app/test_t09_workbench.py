@@ -15,7 +15,7 @@ from transitstress.ui import controller, local
 from transitstress.workbench import single_case
 
 ROOT = Path(__file__).resolve().parents[2]
-LOOPS = [asyncio.new_event_loop() for _ in range(50)]
+LOOPS = [asyncio.new_event_loop() for _ in range(90)]
 CONTENT = (
     "time_days,flux,flux_err\n" + "".join(f"{i / 100},1,.001\n" for i in range(3001))
 ).encode()
@@ -152,6 +152,47 @@ def test_two_ui_sessions_have_separate_jobs(prepared):
     assert b.session_state["job"].result is None
 
 
+def test_unsubmitted_draft_survives_curated_and_destination_navigation(prepared, monkeypatch):
+    at = app()
+    at.checkbox[0].check().run()
+    button(at, "Run comparison").click().run()
+    job = at.session_state["job"]
+    executed, evidence = job.result, job.export()
+    at.number_input(key="period").set_value(4.25).run()
+    at.number_input(key="depth").set_value(1000.0).run()
+    at.number_input(key="duration").set_value(4.0).run()
+    at.number_input(key="epoch").set_value(0.2).run()
+    at.selectbox(key="mask").set_value("central_block").run()
+    monkeypatch.setattr(
+        controller, "single_case", lambda *a, **k: pytest.fail("navigation started science")
+    )
+    for route in ("Curated examples", "Methods", "Start"):
+        if route == "Curated examples":
+            at.sidebar.radio[1].set_value(route).run()
+            at.sidebar.radio[1].set_value("Local experiment").run()
+        else:
+            at.sidebar.radio[0].set_value(route).run()
+            at.sidebar.radio[0].set_value("Workbench").run()
+        assert not at.exception
+        assert [at.number_input(key=k).value for k in ("period", "depth", "duration", "epoch")] == [
+            4.25,
+            1000.0,
+            4.0,
+            0.2,
+        ]
+        assert at.selectbox(key="mask").value == "central_block"
+        assert at.checkbox[0].value
+        assert job.result is executed and job.export() == evidence
+        assert any("Result stale" in w.value for w in at.warning)
+    # A second session cannot inherit either draft or submitted private output.
+    other = app()
+    assert other.number_input(key="depth").value == 750
+    assert other.session_state["job"].result is None
+    button(at, "Reset workbench").click().run()
+    assert not at.metric and not at.checkbox[0].value
+    assert at.number_input(key="depth").value == 750
+
+
 def test_csv_no_data_and_invalid_messages(monkeypatch):
     at = app()
     at.selectbox[0].set_value("CSV").run()
@@ -173,6 +214,30 @@ def test_csv_no_data_and_invalid_messages(monkeypatch):
     at.selectbox[0].set_value("8195886").run()
     assert "CSV headers" in at.error[0].value and not at.exception
     assert button(at, "Run comparison").disabled
+
+
+def test_csv_draft_survives_widget_expiry_and_explicit_clear(monkeypatch):
+    monkeypatch.setattr(
+        controller, "single_case", lambda *a, **k: pytest.fail("draft started science")
+    )
+    at = app()
+    at.selectbox(key="source").set_value("CSV").run()
+    # AppTest cannot inject uploader bytes; use its session-owned data boundary.
+    at.session_state["local_draft"]["csv_content"] = CONTENT
+    at.checkbox[0].check().run()
+    assert not button(at, "Run comparison").disabled
+    at.sidebar.radio[1].set_value("Curated examples").run()
+    at.sidebar.radio[1].set_value("Local experiment").run()
+    assert not at.exception
+    assert at.selectbox(key="source").value == "CSV" and at.checkbox[0].value
+    assert at.session_state["local_draft"]["csv_content"] == CONTENT
+    assert not button(at, "Run comparison").disabled
+    other = app()
+    assert other.session_state["local_draft"]["csv_content"] is None
+    button(at, "Clear CSV input").click().run()
+    assert at.session_state["local_draft"]["csv_content"] is None
+    assert button(at, "Run comparison").disabled
+    assert at.session_state["job"].result is None
 
 
 def test_expected_run_failure_retains_old_result(prepared, monkeypatch):

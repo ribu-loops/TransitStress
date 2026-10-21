@@ -1,6 +1,7 @@
 """Native local workbench; widgets edit a draft and only the Run form starts science."""
 
 import csv
+import hashlib
 import io
 from dataclasses import asdict
 
@@ -23,6 +24,32 @@ DEFAULTS = dict(
 )
 
 
+def remember_draft() -> None:
+    """Widget callbacks save edits independently of submitted inputs/results."""
+    draft = st.session_state["local_draft"]
+    for key in DEFAULTS:
+        if key in st.session_state:
+            draft[key] = st.session_state[key]
+
+
+def remember_upload() -> None:
+    upload = st.session_state.get(f"upload_{st.session_state['upload_generation']}")
+    st.session_state["local_draft"]["csv_content"] = (
+        upload.getvalue() if upload is not None else None
+    )
+
+
+def clear_csv() -> None:
+    """Drop this session's CSV draft; a submitted result remains labelled stale."""
+    if st.session_state["job"].running:
+        return
+    st.session_state["local_draft"]["csv_content"] = None
+    for key in list(st.session_state):
+        if key.startswith("upload_") and key != "upload_generation":
+            del st.session_state[key]
+    st.session_state["upload_generation"] += 1
+
+
 def reset() -> None:
     """Drop this session's private references and replace uploader widget identity."""
     if "job" in st.session_state and st.session_state["job"].running:
@@ -32,6 +59,7 @@ def reset() -> None:
             del st.session_state[key]
     for key, value in DEFAULTS.items():
         st.session_state[key] = value
+    st.session_state["local_draft"] = dict(DEFAULTS, csv_content=None)
     st.session_state["job"] = SessionJob()
     st.session_state["upload_generation"] = st.session_state.get("upload_generation", 0) + 1
     for key in ("timeline_range", "display_case", "failure"):
@@ -276,12 +304,19 @@ def main() -> None:
     )
     if "job" not in st.session_state:
         reset()
+    # Persistent draft keys are never widget-owned, so navigation cannot expire them.
+    # Only restore missing widget keys; callbacks already captured current edits.
+    draft = st.session_state["local_draft"]
+    for key in DEFAULTS:
+        if key not in st.session_state:
+            st.session_state[key] = draft[key]
     job = st.session_state["job"]
     st.button("Reset workbench", on_click=reset, disabled=job.running)
     source = st.selectbox(
         "Input light curve",
         [*BUILT_INS, "CSV"],
         key="source",
+        on_change=remember_draft,
         format_func=lambda v: "Upload CSV" if v == "CSV" else f"TESS development TIC {v}",
     )
     content = None
@@ -292,12 +327,19 @@ def main() -> None:
             "Baseline 24â€“40 days, â‰¥2,000 occupied prepared bins. Extra columns are ignored "
             "and excluded from evidence. Absolute epoch remains unknown."
         )
-        upload = st.file_uploader(
+        st.file_uploader(
             "Local CSV (days, linear flux and error)",
             type=["csv"],
             key=f"upload_{st.session_state['upload_generation']}",
+            on_change=remember_upload,
         )
-        content = upload.getvalue() if upload is not None else None
+        content = draft["csv_content"]
+        if content is not None:
+            st.caption(
+                "CSV retained only in this session; navigation keeps this input. "
+                f"SHA-256: {hashlib.sha256(content).hexdigest()}"
+            )
+            st.button("Clear CSV input", on_click=clear_csv, disabled=job.running)
         try:
             st.download_button(
                 "Download example CSV Â· prepared development subset",
@@ -315,22 +357,36 @@ def main() -> None:
             "This is separate from the known-planet sanity example."
         )
     confirmed = st.checkbox(
-        "I confirm time is in days and flux/error use the same linear units", key="confirmed"
+        "I confirm time is in days and flux/error use the same linear units",
+        key="confirmed",
+        on_change=remember_draft,
     )
     # Outside the submission form so edits immediately rerender and mark results stale.
-    st.number_input("Injected period (days)", 1.0, 8.0, step=0.01, key="period")
-    st.number_input("Injected depth (ppm)", 100.0, 5000.0, step=50.0, key="depth")
-    st.number_input("Injected duration (hours)", 1.0, 6.0, step=0.5, key="duration")
+    st.number_input(
+        "Injected period (days)", 1.0, 8.0, step=0.01, key="period", on_change=remember_draft
+    )
+    st.number_input(
+        "Injected depth (ppm)", 100.0, 5000.0, step=50.0, key="depth", on_change=remember_draft
+    )
+    st.number_input(
+        "Injected duration (hours)", 1.0, 6.0, step=0.5, key="duration", on_change=remember_draft
+    )
     st.number_input(
         "Epoch fraction (0 to less than 1)",
         0.0,
         0.999999,
         step=0.01,
         key="epoch",
+        on_change=remember_draft,
         help="Center of the first repeated dip relative to the timeline, as a fraction "
         "of the injected period.",
     )
-    st.selectbox("Observation mask", ["original", "random_missing", "central_block"], key="mask")
+    st.selectbox(
+        "Observation mask",
+        ["original", "random_missing", "central_block"],
+        key="mask",
+        on_change=remember_draft,
+    )
     request = Request(
         source,
         st.session_state.period,

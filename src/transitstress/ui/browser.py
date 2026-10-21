@@ -585,12 +585,6 @@ def main() -> None:
         st.stop()
     st.sidebar.caption("Data: complete packaged bundle validated · offline · precomputed")
     st.caption("Public evidence: packaged artifacts validated · precomputed · offline")
-    if mode == "local" and destination != "Workbench":
-        # Native widget keys otherwise expire when a destination omits them.
-        # Keep only this session's bounded draft; never execute or cache it.
-        for key in local.DEFAULTS:
-            if key in st.session_state:
-                st.session_state[key] = st.session_state[key]
     if destination == "Start":
         start(bundle, mode)
     elif destination == "Benchmark":
