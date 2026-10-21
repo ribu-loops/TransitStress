@@ -42,7 +42,9 @@ def test_reference_is_read_only_and_changes_only_presentation(monkeypatch):
         raise AssertionError("Reference must not run science")
 
     monkeypatch.setattr("transitstress.search.search_bls", forbidden)
-    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
+    at = AppTest.from_string(
+        "from transitstress.ui.reference import main\nmain()", default_timeout=30
+    ).run()
     assert not at.exception
     assert at.subheader[0].value == "Precomputed development result"
     assert [b.label for b in at.button] == ["Reset to full baseline"]
@@ -62,7 +64,9 @@ def test_display_zoom_overlay_and_reset_never_search(monkeypatch, caplog):
         raise AssertionError("Display controls must not run science")
 
     monkeypatch.setattr("transitstress.search.search_bls", forbidden)
-    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
+    at = AppTest.from_string(
+        "from transitstress.ui.reference import main\nmain()", default_timeout=30
+    ).run()
     baseline = at.slider[0].value
     at.slider[0].set_value((1.5, 2.5)).run()
     assert not at.exception
@@ -82,7 +86,9 @@ def test_display_zoom_overlay_and_reset_never_search(monkeypatch, caplog):
 
 def test_missing_artifact_has_actionable_error(monkeypatch, tmp_path):
     monkeypatch.setattr(reference, "BUNDLE", tmp_path)
-    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
+    at = AppTest.from_string(
+        "from transitstress.ui.reference import main\nmain()", default_timeout=30
+    ).run()
     assert not at.exception
     assert "missing or corrupt" in at.error[0].value
     assert not at.metric
@@ -92,7 +98,9 @@ def test_corrupt_numeric_transport_is_rejected(monkeypatch, tmp_path):
     (tmp_path / "case.json").write_bytes((reference.BUNDLE / "case.json").read_bytes())
     (tmp_path / "case.npz").write_bytes(b"invalid numeric payload")
     monkeypatch.setattr(reference, "BUNDLE", tmp_path)
-    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
+    at = AppTest.from_string(
+        "from transitstress.ui.reference import main\nmain()", default_timeout=30
+    ).run()
     assert not at.exception
     assert "Restore demo/t08" in at.error[0].value
 

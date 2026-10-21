@@ -1,0 +1,33 @@
+{
+  "deduplicated": [
+    {
+      "case_id": "0bff8ef150710ddc8f0595bc90b189cf9cc590a669ed9c9cb64c6c4437b150a6",
+      "plot": "case_0bff8ef15071.png",
+      "roles": [
+        "successful: smallest case_id with at least one exact configuration"
+      ]
+    },
+    {
+      "case_id": "8c8e3698f40bb9f0bf4001204727e4281f14779501e4db94481976c6d99729bc",
+      "plot": "case_8c8e3698f40b.png",
+      "roles": [
+        "lowest retention: minimum eligible row ratio; ties case_id then pipeline_id"
+      ]
+    },
+    {
+      "case_id": "396f01992b0d4090050e70a33ecc505a0db179ec78770472b6e2a8d5f8872d18",
+      "plot": "case_396f01992b0d.png",
+      "roles": [
+        "recovery disagreement: binary gap ties broken by largest absolute paired retention difference, then case_id"
+      ]
+    }
+  ],
+  "lowest_retention_row": {
+    "case_id": "8c8e3698f40bb9f0bf4001204727e4281f14779501e4db94481976c6d99729bc",
+    "pipeline_id": "rm_0p5d",
+    "ratio": 0.3977892191694289
+  },
+  "recovery_disagreement_count": 9,
+  "selection_rules_fixed_in_analysis": true,
+  "successful_case_count": 81
+}

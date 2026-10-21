@@ -126,8 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         # T00 installs only this project as editable; third-party editables are prohibited.
         codes.append(run([PYTHON, "-m", "pip_audit", "--skip-editable"], timeout=600))
     if level == "release":
-        print("INCOMPLETE: packaged-demo validation not implemented (T10/T11)")
-        codes.append(2)
+        codes.append(run([PYTHON, "-m", "transitstress.ui.bundle"]))
     if any(codes):
         return 1 if any(code not in (0, 2) for code in codes) else 2
     return 0

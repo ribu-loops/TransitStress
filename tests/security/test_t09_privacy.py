@@ -58,7 +58,11 @@ def test_query_and_session_mode_cannot_enable_local(monkeypatch):
     at.session_state["confirmed"] = True
     at.run()
     assert not at.exception and not at.get("file_uploader")
-    assert [b.label for b in at.button] == ["Reset to full baseline"]
+    assert [b.label for b in at.button] == ["Explore a curated case", "Open local workbench"]
+    at.sidebar.radio[0].set_value("Workbench").run()
+    assert not at.exception and not at.get("file_uploader")
+    assert not any(b.label == "Run comparison" for b in at.button)
+    assert any("Demo mode denies" in message.value for message in at.info)
     assert "Demo mode denies" in at.info[0].value
 
 

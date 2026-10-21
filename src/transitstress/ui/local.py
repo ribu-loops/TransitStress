@@ -136,7 +136,10 @@ def display_result(job: SessionJob, stale: bool) -> None:
     if all(r["status"] == "ok" for r in rows):
         arrays = result["details"][row["case_id"]]
         bounds = row["original_bounds_days"]
-        if st.session_state.get("display_case") != result["run_id"]:
+        if (
+            st.session_state.get("display_case") != result["run_id"]
+            or "timeline_range" not in st.session_state
+        ):
             st.session_state["timeline_range"] = tuple(bounds)
             st.session_state["display_case"] = result["run_id"]
         view = st.radio(
@@ -162,7 +165,9 @@ def display_result(job: SessionJob, stale: bool) -> None:
             else "Stacked A/B"
         )
         if selected[0] < selected[1]:
-            st.caption("Full-baseline context Â· injected input Â· normalized flux is dimensionless.")
+            st.caption(
+                "Full-baseline context Â· injected input Â· normalized flux is dimensionless."
+            )
             st.plotly_chart(
                 baseline_context(arrays, bounds, selected),
                 width="stretch",
@@ -360,7 +365,8 @@ def main() -> None:
             valid = True
             st.success(
                 f"Input valid Â· {len(curve.time_days):,} prepared bins Â· "
-                f"{curve.original_end_days - curve.original_start_days:.2f} days Â· {curve.curve_id}"
+                f"{curve.original_end_days - curve.original_start_days:.2f} days Â· "
+                f"{curve.curve_id}"
             )
             st.text(
                 f"Input units: {asdict(curve.time_metadata)}\n"

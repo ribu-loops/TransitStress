@@ -15,7 +15,7 @@ from transitstress.ui import controller, local
 from transitstress.workbench import single_case
 
 ROOT = Path(__file__).resolve().parents[2]
-LOOPS = [asyncio.new_event_loop() for _ in range(35)]
+LOOPS = [asyncio.new_event_loop() for _ in range(50)]
 CONTENT = (
     "time_days,flux,flux_err\n" + "".join(f"{i / 100},1,.001\n" for i in range(3001))
 ).encode()
@@ -93,7 +93,8 @@ def prepared(monkeypatch, core_result):
 
 
 def app() -> AppTest:
-    return AppTest.from_file(str(ROOT / "app.py"), default_timeout=45).run()
+    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=45).run()
+    return at.sidebar.radio[0].set_value("Workbench").run()
 
 
 def button(at, label):
@@ -129,6 +130,12 @@ def test_ready_run_edit_stale_zoom_duplicate_and_reset(prepared):
     at.number_input[0].set_value(4.0).run()
     button(at, "Run comparison").click().run()
     assert len(prepared) == 2 and prepared[-1]["period_days"] == 4
+    executed = at.session_state["job"].result
+    at.sidebar.radio[0].set_value("Start").run()
+    at.sidebar.radio[0].set_value("Workbench").run()
+    assert not at.exception and isinstance(at.slider[0].value, tuple)
+    assert at.session_state["job"].result is executed and len(prepared) == 2
+    assert at.number_input[0].value == 4
     button(at, "Reset workbench").click().run()
     assert not at.metric and at.number_input[0].value == 3.41
     assert at.session_state["job"].result is None
