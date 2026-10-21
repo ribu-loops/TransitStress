@@ -77,7 +77,7 @@ def evidence_zip(result: dict, request: Request, fingerprint: str) -> bytes:
         "background comparisons. "
         "Not part of the frozen evaluation. Geometric recovery and BLS peaks are diagnostics, "
         "not planet confirmation or calibrated probabilities. All retained samples shown.</p>"
-        "<p>Exact recovery requires period error â‰¤1% and center agreement within "
+        "<p>Exact recovery requires period error ≤1% and center agreement within "
         "half the injected "
         "duration at every sufficiently observed full event. Eligibility: at least two full events "
         "with three retained points each and six total in-transit points. Failures and "

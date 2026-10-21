@@ -82,27 +82,27 @@ def display_result(job: SessionJob, stale: bool) -> None:
     result, request = job.result, job.request
     rows = [r for r in result["rows"] if r["case_kind"] == "injection"]
     row = rows[0]
-    st.subheader("Exploratory result Â· retained executed settings")
+    st.subheader("Exploratory result · retained executed settings")
     source_label = (
-        "CSV Â· absolute epoch unknown"
+        "CSV · absolute epoch unknown"
         if request.source == "CSV"
         else "TESS development TIC " + request.source
     )
     st.text(
         f"Input: {source_label}\n"
-        f"Synthetic injection: {request.period_days:g} days Â· {request.depth_ppm:g} ppm Â· "
-        f"{request.duration_hours:g} hours Â· epoch fraction {request.epoch_fraction:g} Â· "
+        f"Synthetic injection: {request.period_days:g} days · {request.depth_ppm:g} ppm · "
+        f"{request.duration_hours:g} hours · epoch fraction {request.epoch_fraction:g} · "
         f"{request.mask_name}\n"
         f"Run: {result['run_id']}"
     )
-    st.caption(f"Core elapsed: {job.elapsed_seconds:.2f} s Â· request identity {job.fingerprint}")
+    st.caption(f"Core elapsed: {job.elapsed_seconds:.2f} s · request identity {job.fingerprint}")
     for notice in result["notices"]:
         st.info(notice)
     st.write(
-        f"{row['n_observed']:,} retained / {row['n_original']:,} prepared bins Â· "
-        f"{row['original_bounds_days'][1] - row['original_bounds_days'][0]:.2f} days baseline Â· "
+        f"{row['n_observed']:,} retained / {row['n_original']:,} prepared bins · "
+        f"{row['original_bounds_days'][1] - row['original_bounds_days'][0]:.2f} days baseline · "
         f"{row['observed_transits']} / {len(row['full_centers_days'] or [])} "
-        "full events sufficiently observed Â· "
+        "full events sufficiently observed · "
         f"{row['total_in_transit_points']} in-transit points"
     )
     if row["coverage_eligible"] is False:
@@ -148,13 +148,13 @@ def display_result(job: SessionJob, stale: bool) -> None:
                 )
     with st.expander("What counts as exact recovery?", expanded=True):
         st.write(
-            "After blind search: period error â‰¤1% AND nearest fitted-center error "
-            "â‰¤half the injected "
+            "After blind search: period error ≤1% AND nearest fitted-center error "
+            "≤half the injected "
             "duration at every sufficiently observed true center. Whole-period epoch "
             "shifts are equivalent. "
-            "Half/double-period peaks are separate outcomes. Eligibility requires â‰¥2 "
+            "Half/double-period peaks are separate outcomes. Eligibility requires ≥2 "
             "full events with "
-            "â‰¥3 retained points each and â‰¥6 total in-transit points. Truth never "
+            "≥3 retained points each and ≥6 total in-transit points. Truth never "
             "guides detrending or search."
         )
         st.caption(
@@ -193,9 +193,7 @@ def display_result(job: SessionJob, stale: bool) -> None:
             else "Stacked A/B"
         )
         if selected[0] < selected[1]:
-            st.caption(
-                "Full-baseline context Â· injected input Â· normalized flux is dimensionless."
-            )
+            st.caption("Full-baseline context · injected input · normalized flux is dimensionless.")
             st.plotly_chart(
                 baseline_context(arrays, bounds, selected),
                 width="stretch",
@@ -291,8 +289,8 @@ def main() -> None:
     if mode == "demo":
         reference.main()
         return
-    st.set_page_config(page_title="TransitStress Â· local workbench", layout="centered")
-    st.caption("TRANSITSTRESS / WORKBENCH Â· LOCAL Â· G3/G4 PENDING")
+    st.set_page_config(page_title="TransitStress · local workbench", layout="centered")
+    st.caption("TRANSITSTRESS / WORKBENCH · LOCAL · G3/G4 PENDING")
     st.title("Does the dip survive?")
     st.write(
         "Compare two detrending configurations on a signal deliberately added to a light curve."
@@ -322,9 +320,9 @@ def main() -> None:
     content = None
     if source == "CSV":
         st.write(
-            "UTF-8 uncompressed CSV â‰¤5 MiB / 50,000 rows; unique time_days, flux, "
+            "UTF-8 uncompressed CSV ≤5 MiB / 50,000 rows; unique time_days, flux, "
             "flux_err. Positive finite linear flux/errors; no duplicate times. "
-            "Baseline 24â€“40 days, â‰¥2,000 occupied prepared bins. Extra columns are ignored "
+            "Baseline 24–40 days, ≥2,000 occupied prepared bins. Extra columns are ignored "
             "and excluded from evidence. Absolute epoch remains unknown."
         )
         st.file_uploader(
@@ -342,7 +340,7 @@ def main() -> None:
             st.button("Clear CSV input", on_click=clear_csv, disabled=job.running)
         try:
             st.download_button(
-                "Download example CSV Â· prepared development subset",
+                "Download example CSV · prepared development subset",
                 sample_csv(),
                 file_name="development-example.csv",
                 mime="text/csv",
@@ -352,7 +350,7 @@ def main() -> None:
             st.error("Example CSV unavailable. Restore demo/t08 from the verified checkout.")
     else:
         st.caption(
-            "Prepared TESS PDCSAP development background Â· normalized, 10-minute "
+            "Prepared TESS PDCSAP development background · normalized, 10-minute "
             "binned. Offline pinned cache only; no acquisition. "
             "This is separate from the known-planet sanity example."
         )
@@ -420,8 +418,8 @@ def main() -> None:
         else:
             valid = True
             st.success(
-                f"Input valid Â· {len(curve.time_days):,} prepared bins Â· "
-                f"{curve.original_end_days - curve.original_start_days:.2f} days Â· "
+                f"Input valid · {len(curve.time_days):,} prepared bins · "
+                f"{curve.original_end_days - curve.original_start_days:.2f} days · "
                 f"{curve.curve_id}"
             )
             st.text(
@@ -433,7 +431,7 @@ def main() -> None:
     with st.form("run_comparison"):
         st.caption(
             "Run one synthetic injection with fixed A/B windows and independent "
-            "0.75â€“10-day search settings. Widget edits and display zoom do not run science."
+            "0.75–10-day search settings. Widget edits and display zoom do not run science."
         )
         submitted = st.form_submit_button(
             "Run comparison", disabled=not valid or job.running, type="primary"
