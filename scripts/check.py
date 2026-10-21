@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import platform
 import shutil
 
 # The development wrapper requires subprocess; owned fixed argument lists are tested.
@@ -46,12 +47,21 @@ def suite(directory: str) -> int:
 def scan_secrets() -> int:
     """Stage only tracked/nonignored regular project files, with containment checks."""
     pin_path = ROOT / "scripts/gitleaks-pin.json"
-    executable = ROOT / ".tools/gitleaks.exe"
-    if not pin_path.is_file() or not executable.is_file():
+    if not pin_path.is_file():
         print("INCOMPLETE: install pinned Gitleaks as documented in docs/ENVIRONMENT.md")
         return 2
     pin = json.loads(pin_path.read_text(encoding="utf-8"))
-    if hashlib.sha256(executable.read_bytes()).hexdigest() != pin["executable_sha256"]:
+    machine = platform.machine().lower()
+    architecture = "x86_64" if machine in {"amd64", "x86_64"} else machine
+    selected = pin["platforms"].get(f"{platform.system()}-{architecture}")
+    if selected is None:
+        print("INCOMPLETE: no reviewed Gitleaks pin for this platform")
+        return 2
+    executable = ROOT / ".tools" / selected["filename"]
+    if not executable.is_file():
+        print("INCOMPLETE: install pinned Gitleaks as documented in docs/ENVIRONMENT.md")
+        return 2
+    if hashlib.sha256(executable.read_bytes()).hexdigest() != selected["executable_sha256"]:
         print("INCOMPLETE: Gitleaks executable checksum mismatch")
         return 2
     git = shutil.which("git")

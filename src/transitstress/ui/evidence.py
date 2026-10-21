@@ -72,7 +72,9 @@ def evidence_zip(result: dict, request: Request, fingerprint: str) -> bytes:
     page = (
         "<!doctype html><html lang=en><meta charset=utf-8>"
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        "<title>TransitStress exploratory evidence</title><h1>Exploratory synthetic injection</h1>"
+        "<title>TransitStress exploratory evidence</title>"
+        "<style>pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;"
+        "box-sizing:border-box}</style><h1>Exploratory synthetic injection</h1>"
         "<p>One injection, two detrending configurations, reused independent "
         "background comparisons. "
         "Not part of the frozen evaluation. Geometric recovery and BLS peaks are diagnostics, "
