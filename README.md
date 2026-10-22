@@ -53,7 +53,8 @@ Historical results were produced at `2c897282f6db9e959a373896f1b3201859d83e70`.
 The later [g3-wsl-cache-envelope-v1 correction](docs/corrections/G3_WSL_CACHE_V1.md)
 has a distinct scientific identity. T11's [package selection revision](docs/corrections/T11_PACKAGE_V1.md)
 also versions the metadata fingerprint. The original freeze/tag does not authorize
-corrected-source evaluation or resume. Source-data reproduction and author
+corrected-source evaluation or resume. The authorized source-data attempt [stopped before preparation](docs/T11_REPRODUCTION_OUTCOME.md)
+on a clone byte-identity mismatch. Reproduction and author
 understanding evidence remain pending; see [the evidence ledger](docs/T11_VERIFICATION.md).
 
 ## Installation
