@@ -5,7 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "transitstress"
 version = "0.1.0"
-description = "Local transit preprocessing robustness experiment (bootstrap)"
+description = "Paired transit injection and preprocessing robustness experiment"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12,<3.13"
 dependencies = ["numpy", "pandas", "astropy", "lightkurve", "plotly", "streamlit"]
 
@@ -25,3 +28,20 @@ select = ["E", "F", "I", "UP"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+
+# T11: explicit public source selection; never package ignored tools/private state.
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src/**/*.py", "/app.py", "/.streamlit/config.toml",
+  "/configs/*.toml", "/configs/*.json", "/data/*.json", "/data/*.csv",
+  "/demo/**", "/docs/**", "/reports/**", "/tests/**/*.py", "/tests/fixtures/**",
+  "/scripts/*.py", "/scripts/*.json", "/devtools/*.py", "/examples/*",
+  "/.github/workflows/offline.yml", "/*.md", "/LICENSE", "/NOTICE",
+  "/.python-version", "/.gitignore", "/.gitattributes", "/pyproject.toml", "/uv.lock",
+]
+exclude = [
+  "**/__pycache__/**", "**/*.pyc", "/.cache/**", "/.tools/**", "/.venv/**",
+  "/runs/**", "/private_notes/**", "/data/raw/**", "/local_uploads/**",
+  "/.env*", "/.streamlit/secrets.toml", "/security_reports/**",
+]
