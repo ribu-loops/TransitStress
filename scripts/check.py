@@ -129,7 +129,9 @@ def main(argv: list[str] | None = None) -> int:
         codes.append(suite("tests/app"))
     if level in {"security", "release"}:
         codes.append(suite("tests/security"))
-        sources = ["src", "scripts"] + (["app.py"] if (ROOT / "app.py").is_file() else [])
+        sources = ["src", "scripts", "devtools"] + (
+            ["app.py"] if (ROOT / "app.py").is_file() else []
+        )
         codes.append(run([PYTHON, "-m", "bandit", "-r", *sources]))
         codes.append(scan_secrets())
     if level == "security-online":

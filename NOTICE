@@ -1,0 +1,60 @@
+TransitStress third-party notices
+
+Original project implementation/documentation: MIT, see LICENSE.
+TESS/MAST data and derived arrays retain the source-data rights/attribution
+in docs/ATTRIBUTION.md; they are not relicensed by the original-code MIT grant.
+Astropy/BLS, Lightkurve and upstream SPOC processing are credited there.
+
+Runtime dependencies are installed separately from uv.lock. Their distribution
+licenses and bundled component notices continue to apply: NumPy (BSD and
+component licenses), pandas (BSD), Astropy (BSD and component notices),
+Lightkurve (MIT), Plotly (MIT), Streamlit (Apache-2.0 and component notices).
+This list does not replace the full licenses shipped with those distributions.
+
+Self-contained HTML embeds the installed Plotly.js 4.1.1 bundle, whose header
+reads Copyright 2012-2026, Plotly, Inc., All rights reserved, MIT licensed.
+Preserve its embedded component notices. The following license text is copied
+verbatim from the installed locked Plotly.py 7.1.0 distribution:
+
+MIT License
+
+Copyright (c) 2016-2026 Plotly Technologies Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+Bundled Plotly.js notice: Copyright 2012-2026, Plotly, Inc.
+All rights reserved. Licensed under the MIT license.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
