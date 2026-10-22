@@ -53,9 +53,13 @@ Historical results were produced at `2c897282f6db9e959a373896f1b3201859d83e70`.
 The later [g3-wsl-cache-envelope-v1 correction](docs/corrections/G3_WSL_CACHE_V1.md)
 has a distinct scientific identity. T11's [package selection revision](docs/corrections/T11_PACKAGE_V1.md)
 also versions the metadata fingerprint. The original freeze/tag does not authorize
-corrected-source evaluation or resume. The authorized source-data attempt [stopped before preparation](docs/T11_REPRODUCTION_OUTCOME.md)
-on a clone byte-identity mismatch. Reproduction and author
-understanding evidence remain pending; see [the evidence ledger](docs/T11_VERIFICATION.md).
+corrected-source evaluation or resume. The later [V5 source-data self-reproduction](docs/T11_REPRODUCTION_V5_OUTCOME.md)
+completed its one-case comparison at unchanged tolerances and received an
+[independent scoped outcome PASS](docs/reviews/T11_REPRODUCTION_V5_OUTCOME_REVIEW.md).
+Earlier failed attempts remain preserved. This is assistant-performed
+self-reproduction, not an external-human rerun or reproduction of the full
+historical evaluation. Author understanding and remaining release requirements
+are pending; see [the current evidence ledger](docs/T11_CLOSEOUT.md).
 
 ## Installation
 
@@ -88,7 +92,7 @@ real known-signal sanity check.
 
 [Local input guide](docs/T09_WORKBENCH.md), [demo guide](docs/T10_DEMO.md) and
 [sample-file guide](examples/README.md) explain the separate exploratory path.
-Source-data execution requires the separately authorized
-[bounded reproduction proposal](docs/T11_REPRODUCTION_PROPOSAL.md).
+The V5 and V4 scientific authorizations are spent; the [preserved proposals and
+outcomes](docs/T11_CLOSEOUT.md) authorize no further source-data execution.
 Original implementation is [MIT licensed](LICENSE); data and dependencies retain
 their own rights and [notices](NOTICE).
