@@ -440,7 +440,7 @@ def main() -> None:
         progress = st.progress(0, text="Validated input; starting paired comparison")
         try:
             with st.spinner(
-                "Running frozen T06 core: independent backgrounds, then injected A/B",
+                "Running exploratory analysis: independent backgrounds, then injected A/B",
                 show_time=True,
             ):
                 changed = job.run(request)
