@@ -1,98 +1,147 @@
 # TransitStress
 
-**Does preprocessing preserve a signal deliberately added to a light curve?**
-TransitStress compares two detrending configurations (0.5 and 1.5 day rolling
-medians) on prepared TESS backgrounds, with blind Box Least Squares (BLS)
-searches and post-search paired diagnostics.
+**Does removing slow brightness variation also remove a small transit-like dip?**
 
-## Contribution
+A light curve records brightness over time. Stars and instruments can vary slowly;
+a planet passing in front of a star can produce a much smaller, repeated dip.
+Detrending estimates and removes the slow variation, but can also weaken that dip.
 
-The original contribution is the bounded experiment, truth-isolated orchestration,
-paired retention/recovery evaluation, provenance and failure-preserving artifacts,
-and a local workbench with an offline evidence browser. Astropy supplies BLS;
-Lightkurve reads extracted TESS products. This project does not invent those
-methods. See [methods/results](docs/METHODS_RESULTS.md),
-[data/software attribution](docs/ATTRIBUTION.md) and
-[contribution/AI notes](CONTRIBUTIONS.md).
+TransitStress inserts artificial box-shaped dips into real, prepared TESS
+observations and compares two rolling-median detrending windows: **A, 0.5 days**
+and **B, 1.5 days**. Each processed light curve is searched with Astropy's
+Box Least Squares (BLS), a method for finding repeated dips. The search is blind:
+the injected timing is used only afterward to score and explain the saved result.
+Synthetic injections are experiments, **not discovered planets**.
 
-## Evidence
 
-The historical protocol-v1-cohort1 evaluation contains **five evaluation stars,
-135 injection cases, two detrending configurations and paired processing**.
-Its 390 rows include 270 injection, 30 real-background and 90 Gaussian-null rows.
+*Real T10 application viewport. Its historical “G3/G4 pending” label is preserved;
+current scoped review status is below.
+[Static walkthrough](docs/DEMO_WALKTHROUGH.md).*
 
-| Historical evaluation | A / 0.5 d | B / 1.5 d |
+## What was built and measured
+
+The project combines a bounded paired experiment, provenance and failure records,
+a local workbench, and an offline browser of saved results. Astropy supplies BLS;
+Lightkurve reads TESS products. This project does not invent those methods.
+
+The historical evaluation used **five evaluation stars, 135 injection cases,
+two detrending configurations and paired processing**. Each case is processed
+both ways; these are not 135 independent stars.
+
+| Saved synthetic evaluation | A / 0.5 d | B / 1.5 d |
 | --- | ---: | ---: |
-| Exact geometric top-peak matches / planned | 79/135 (58.5%) | 74/135 (54.8%) |
-| Exact / coverage-eligible | 79/135 | 74/135 |
+| Exact geometric top-peak matches / planned cases | 79/135 (58.5%) | 74/135 (54.8%) |
+| Exact / coverage-eligible cases | 79/135 | 74/135 |
 | Insufficient coverage / technical errors | 0 / 0 | 0 / 0 |
 | Median paired depth retention ratio | 0.8144 | 0.9732 |
 
-These are saved measured results, not a fresh execution of today's source.
-[T07's independent results review](docs/reviews/T07.md) and
-[all-row tables](reports/t07_evaluation/results.csv) remain available.
-[The review pack](docs/review_pack/OVERVIEW.md) supplies one overview, one figure,
-run instructions and three methodological questions.
+“Exact” requires agreement in period and timing. Eligibility requires at least
+two fully contained events with at least three retained points each, and six
+in-transit points overall. All 135 cases were eligible. Neither configuration
+had an already-matching uninjected-background top peak among eligible injection
+cases; this qualification is not proof of causality or authenticity.
+Retention compares injected and uninjected processing on identical timestamps.
+Keeping more depth and finding the correct strongest peak are different outcomes.
 
-## Limits and status
+These are saved measurements from the historical frozen source, not a new run of
+today's source. See [methods, per-star results and limitations](docs/METHODS_RESULTS.md),
+[all result rows](reports/t07_evaluation/results.csv) and the
+[independent results review](docs/reviews/T07.md).
+The real **Pi Mensae** known-signal sanity check is separate from these synthetic cases.
 
-Repeated cases are correlated and reuse five stars; they are not 135 independent
-stars. This convenience cohort, additive box injections after binning, one
-duration, bundled period/phase families and one missingness realization do not
-establish survey completeness or a generally superior detrending method.
-BLS peaks/SNR are diagnostics, not planet confirmation or calibrated probability.
+## Limits and current status
 
-**Combined G3 PASS applies to accepted Linux/Ubuntu WSL scope**, through the
-[original final review](docs/reviews/G3_LINUX_FINAL_REVIEW.md) plus its unchanged
-[LNX-1 closure](docs/reviews/G3_LNX1_CLOSURE.md). T11 is WIP; G4 and public release
-are not approved. Native Windows execution and link proof remain **unavailable,
-not passed**. Hosted Ubuntu/Windows CI is pending a later authorized push.
-No deployment or external endorsement is claimed.
+Five stars, correlated repeated cases, simple additive boxes after binning, one
+injected duration and limited gap patterns do not establish survey completeness
+or a generally superior detrending method. BLS peaks and signal-to-noise ratios
+are diagnostics, not planet confirmation or calibrated probabilities.
 
-Historical results were produced at `2c897282f6db9e959a373896f1b3201859d83e70`.
-The later [g3-wsl-cache-envelope-v1 correction](docs/corrections/G3_WSL_CACHE_V1.md)
-has a distinct scientific identity. T11's [package selection revision](docs/corrections/T11_PACKAGE_V1.md)
-also versions the metadata fingerprint. The original freeze/tag does not authorize
-corrected-source evaluation or resume. The later [V5 source-data self-reproduction](docs/T11_REPRODUCTION_V5_OUTCOME.md)
-completed its one-case comparison at unchanged tolerances and received an
+Accepted G3 review applies to [Linux/Ubuntu WSL](docs/reviews/G3_LINUX_FINAL_REVIEW.md)
+with its [LNX-1 closure](docs/reviews/G3_LNX1_CLOSURE.md).
+One later source-data self-reproduction completed its bounded comparison and received
 [independent scoped outcome PASS](docs/reviews/T11_REPRODUCTION_V5_OUTCOME_REVIEW.md).
-Earlier failed attempts remain preserved. This is assistant-performed
-self-reproduction, not an external-human rerun or reproduction of the full
-historical evaluation. Author understanding and remaining release requirements
-are pending; see [the current evidence ledger](docs/T11_CLOSEOUT.md).
+It was assistant-performed, not an external-human rerun, and does not validate all
+inputs or reproduce the full evaluation. Original failures and distinct source
+identities remain in [the evidence ledger](docs/T11_CLOSEOUT.md).
+The historical freeze does not authorize corrected-source evaluation or resume.
 
-## Installation
+**Local release candidate only: T11 remains WIP and independent G4 is pending.**
+Author study is deferred and unassessed. Native Windows execution/link proof is
+unavailable, not passed; hosted Ubuntu/Windows CI awaits a later authorized push.
+Public repository, PyPI release and hosted demo destinations are pending.
 
-Use Python **3.12.15** and **uv 0.13.1**, with the committed `uv.lock`.
-The current supported execution scope is Linux x86-64 / Ubuntu WSL.
-From a checkout root in an Ubuntu shell:
+## Setup and launch
+
+Verified scope: **Linux x86-64 / Ubuntu WSL**, Python **3.12.15**, **uv 0.13.1**.
+Use a source checkout or extracted source distribution for the dashboard.
+The wheel supplies the library/CLI without dashboard assets. Install Python and
+uv first; no API key, GPU or runtime AI is needed.
+
+From the source root in an Ubuntu shell:
 
 ```sh
 uv sync --locked --python 3.12.15
-uv run --locked python -m transitstress doctor
-```
-
-Installation needs the exact cached distributions or registry access; application
-demo browsing does not need network. Do not upgrade individual dependencies.
-For the fresh local clone, wheel and verification procedure, including scanner
-setup, see [run instructions](docs/RUNNING.md). The
-[prepared CI matrix](.github/workflows/offline.yml) is an unexecuted workflow.
-
-## Offline demo
-
-```sh
+uv run --locked --offline --no-sync python -m transitstress doctor
 TRANSITSTRESS_MODE=demo uv run --locked --offline --no-sync streamlit run app.py --server.address 127.0.0.1
 ```
 
-Open the loopback URL printed by Streamlit. Start, Workbench, Benchmark and Methods
-browse packaged evidence; demo rejects uploads and new computation. No MAST
-access, API key or runtime AI is required. Three curated detailed cases accompany
-all summary rows; other cases are labelled summary-only. Pi Mensae is a separate
-real known-signal sanity check.
+Initial installation normally downloads dependencies unless the interpreter and
+locked packages are cached. After setup, the precomputed demo runs offline.
+Open the loopback URL printed by Streamlit; stop with Ctrl+C.
+[Detailed setup and verification](docs/RUNNING.md);
+[what each distribution contains](docs/DISTRIBUTION.md).
 
-[Local input guide](docs/T09_WORKBENCH.md), [demo guide](docs/T10_DEMO.md) and
-[sample-file guide](examples/README.md) explain the separate exploratory path.
-The V5 and V4 scientific authorizations are spent; the [preserved proposals and
-outcomes](docs/T11_CLOSEOUT.md) authorize no further source-data execution.
-Original implementation is [MIT licensed](LICENSE); data and dependencies retain
-their own rights and [notices](NOTICE).
+## Explore saved results or compute locally
+
+**Precomputed demo:** choose **Explore a curated case** or **Benchmark**, select a
+case/filter, compare A/B plots and numbers, then download the table or selected
+pair evidence ZIP. Three evaluation cases have detailed arrays; other rows are
+clearly summary-only. Navigation, filters and display zoom do not run science.
+Demo mode rejects uploads and new computation.
+
+**Local computation:** launch separately:
+
+```sh
+TRANSITSTRESS_MODE=local uv run --locked --offline --no-sync streamlit run app.py --server.address 127.0.0.1
+```
+
+Choose a development built-in with its required prepared cache, or upload a valid
+CSV and confirm its units. Configure the bounded injection, explicitly press
+**Run**, inspect the A/B timeline, trends, BLS peaks and folds, then export case
+evidence. Input changes mark old output stale. Local results are exploratory and
+never join the frozen evaluation. Built-ins need existing pinned prepared data;
+startup does not download it. The development V4/V5 authorizations are spent;
+old proposals are not standing permission for another run.
+
+### CSV input
+
+Use UTF-8 CSV with unique headers `time_days,flux,flux_err`. Time is in **days**;
+flux is positive, normalized, dimensionless linear brightness (not magnitudes);
+uncertainty is positive in the same flux units. At normalized flux 1, 750 ppm is
+a relative dip of 0.000750. Absolute epoch may be unknown for an uploaded CSV.
+
+The complete [minimal valid sample](examples/synthetic_constant.csv) has 3,001
+points spanning 27 days. It is an explicitly synthetic constant-flux fixture,
+not a measured TESS result. A three-row header preview alone would be too short.
+[Sample details](examples/README.md).
+
+| Common error | Corrective action |
+| --- | --- |
+| Missing/duplicate headers, malformed cells or formulas | Supply unique required columns containing finite numbers. |
+| Nonpositive flux/error or duplicate times | Correct source data; invalid values are rejected, not silently repaired. |
+| Wrong units or too little time support | Convert to days and normalized linear flux; require 24–40 days and at least 2,000 occupied prepared bins. |
+| File too large | Keep uncompressed input at most 5 MiB and 50,000 data rows. |
+| Missing/corrupt demo assets | Restore matching source assets; do not rerun evaluation to repair the demo. |
+| Missing built-in cache | Use a valid CSV or restore the exact approved cache; no automatic acquisition. |
+
+## Attribution and license
+
+Original code/documentation retain the approved [MIT license](LICENSE).
+TESS/MAST observations, derived arrays, dependencies and Plotly assets retain
+their own rights and [notices](NOTICE); see [data/software attribution](docs/ATTRIBUTION.md).
+The project license grants no new rights over those materials.
+
+This is an author-directed student exploration with substantial AI assistance in
+implementation, tests, documentation and model review. There is no runtime LLM.
+[Contribution disclosure](CONTRIBUTIONS.md) distinguishes that assistance from
+human validation, author understanding and institutional endorsement.

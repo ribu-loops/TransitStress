@@ -5,6 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "transitstress"
 version = "0.1.0"
+authors = [{ name = "ribu-loops", email = "344381376+ribu-loops@users.noreply.github.com" }]
 description = "Paired transit injection and preprocessing robustness experiment"
 readme = "README.md"
 license = "MIT"
@@ -30,18 +31,22 @@ testpaths = ["tests"]
 addopts = "-ra"
 
 
-# T11: explicit public source selection; never package ignored tools/private state.
+# Explicit public source selection; preserve ignored tools/private state locally.
 [tool.hatch.build.targets.sdist]
 include = [
   "/src/**/*.py", "/app.py", "/.streamlit/config.toml",
   "/configs/*.toml", "/configs/*.json", "/data/*.json", "/data/*.csv",
   "/demo/**", "/docs/**", "/reports/**", "/tests/**/*.py", "/tests/fixtures/**",
   "/scripts/*.py", "/scripts/*.json", "/devtools/*.py", "/examples/*",
-  "/.github/workflows/offline.yml", "/*.md", "/LICENSE", "/NOTICE",
+  "/.github/workflows/offline.yml", "/README.md", "/CONTRIBUTIONS.md",
+  "/AGENTS.md", "/SECURITY.md", "/DESIGN.md", "/PLAN.md", "/LICENSE", "/NOTICE",
   "/.python-version", "/.gitignore", "/.gitattributes", "/pyproject.toml", "/uv.lock",
 ]
 exclude = [
   "**/__pycache__/**", "**/*.pyc", "/.cache/**", "/.tools/**", "/.venv/**",
   "/runs/**", "/private_notes/**", "/data/raw/**", "/local_uploads/**",
   "/.env*", "/.streamlit/secrets.toml", "/security_reports/**",
+  "/NEXT_SESSION_PROMPT.md", "/STATE.md", "/WORKLOG.md",
+  "/docs/LEARNING.md", "/docs/T07_SESSION_PROMPT.md",
+  "**/.git/**", "**/.vscode/**", "**/.idea/**", "**/*.pem", "**/*.key",
 ]
