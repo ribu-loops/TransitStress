@@ -18,7 +18,11 @@ then `transitstress --help`. It does not contain source-root dashboard assets.
 Ordinary pip resolution enforces the wheel floors; exact tested versions are
 recorded in the source lock, not guaranteed by an unconstrained future resolver.
 
-For optional local CSV analysis, launch separately from the source root:
+For optional local CSV analysis, use a Git checkout with a real current commit,
+then launch separately from its root. Current computation records Git execution
+provenance: an extracted sdist without .git cannot perform Run comparison.
+The public saved demo and exports have no such requirement. This candidate does
+not create a public Git repository or fabricate development commits:
 
 ```sh
 TRANSITSTRESS_MODE=local uv run --locked --offline --no-sync streamlit run app.py --server.address 127.0.0.1 --server.headless true
@@ -45,7 +49,9 @@ No local result becomes part of the saved benchmark.
 
 Offline fixtures are available under tests. With development dependencies installed,
 `uv run --locked --offline --no-sync python -m pytest tests/unit tests/integration tests/security`
-runs their bounded calculations with network-blocking fixtures. The complete
+runs their bounded calculations with network-blocking fixtures in a Git checkout.
+In an extracted sdist, the private-computation export fixture cannot obtain Git
+provenance; this is an explicit limitation, not a skipped or passing test. The complete
 development release wrapper additionally needs Git and the pinned Gitleaks binary;
 that executable is deliberately not distributed. Do not interpret its missing-tool
 failure as a test pass. Hosted CI and tool downloads are separate release steps.

@@ -50,3 +50,10 @@ not passed; hosted Ubuntu/Windows CI and public URL checks await separately
 authorized publication. No published repository, PyPI release or hosted service
 is claimed. These limits prevent treating a usable local candidate as a completed
 public release.
+
+Candidate-boundary verification exposed an existing requirement: fresh local
+CSV computation records Git execution provenance. An extracted sdist with no .git
+supports the saved demo/export, but not Run comparison. An archive security run
+retained one failure at Git HEAD lookup (268 passed); this is not represented as
+a green full suite. The same existing fixtures are checked in the development
+Git checkout. No fake commit or relaxed provenance rule was introduced.

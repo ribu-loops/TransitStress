@@ -58,7 +58,9 @@ reproduction uses the lock. See [usage](docs/public/USAGE.md) and
 3. Download saved evidence or browse all 390 rows. Three evaluation cases have
    detailed arrays; others are explicitly summary-only. Navigation never runs science.
 
-Local CSV computation is an advanced separate mode with explicit Run; see
+Local CSV computation is an advanced separate mode with explicit Run and requires
+a Git checkout with a real current commit for provenance. The extracted source
+distribution supports the saved demo; it has no Git history. See
 [usage and input limits](docs/public/USAGE.md) and the
 [synthetic sample](examples/synthetic_constant.csv). Built-ins need the original
 prepared cache, which is not distributed. Saved demo startup does not need it.
