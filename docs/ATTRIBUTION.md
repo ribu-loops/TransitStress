@@ -89,5 +89,5 @@ See [CONTRIBUTIONS](../CONTRIBUTIONS.md) for the material AI-assistance disclosu
 and the distinction between automated/model review and human validation.
 
 The current packaging also directly enforces certifi >=2026.10.19 (MPL-2.0) and
-Pillow >=13,<14 (HPND and bundled-component notices); the lock retains the reviewed
+Pillow >=13,<14 (MIT-CMU and bundled-component notices); the lock retains the reviewed
 2026.10.19 and 13.0.0 versions. They are installed separately, not vendored.
