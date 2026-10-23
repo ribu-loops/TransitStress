@@ -39,24 +39,22 @@ def test_four_destinations_known_signal_and_offline_demo():
     at = app()
     assert not at.exception
     assert at.sidebar.radio[0].options == ["Start", "Workbench", "Benchmark", "Methods"]
-    assert [m.value for m in at.metric] == ["79/135", "74/135"]
-    assert any("Pi Mensae" in s.value for s in at.subheader)
+    assert not at.metric
+    assert any("Pi Mensae" in v.value for v in at.subheader)
     at.sidebar.radio[0].set_value("Workbench").run()
     assert not at.exception and not at.get("file_uploader")
     assert not any(b.label == "Run comparison" for b in at.button)
-    for cid in at.selectbox[0].options:
-        # AppTest options contain formatted labels; use underlying bundle IDs.
-        assert len(cid) > 12
     ids = [c["case_id"] for c in bundle.load_bundle().manifest["curated"]]
     for cid in ids:
         at.selectbox[0].set_value(cid).run()
         assert not at.exception
         assert cid in " ".join(t.value for t in at.text)
+        at.radio(key="reading_choice").set_value("5 · Evidence").run()
         assert len(at.get("download_button")) == 1
-    original = [m.value for m in at.metric]
+    at.radio(key="reading_choice").set_value("3 · Compare").run()
     at.slider[0].set_value((3.0, 4.0)).run()
-    at.radio[1].set_value("Overlay").run()
-    assert not at.exception and [m.value for m in at.metric] == original
+    at.radio(key="public_layout").set_value("Overlay").run()
+    assert not at.exception
     next(b for b in at.button if b.label == "Reset to full baseline").click().run()
     assert at.slider[0].value[0] == 0
     at.sidebar.radio[0].set_value("Methods").run()
@@ -64,7 +62,6 @@ def test_four_destinations_known_signal_and_offline_demo():
     assert any("750 ppm" in m.value for m in at.markdown)
     at.sidebar.radio[0].set_value("Workbench").run()
     assert not at.exception and isinstance(at.slider[0].value, tuple)
-    assert len(at.get("download_button")) == 1
 
 
 def test_filters_denominators_all_outcomes_and_summary_only():
@@ -73,16 +70,16 @@ def test_filters_denominators_all_outcomes_and_summary_only():
     assert not at.exception and [m.value for m in at.metric] == ["79/135", "74/135"]
     assert any("390 / 390" in m.value for m in at.markdown)
     assert any("Summary-only row" in i.value for i in at.info)
-    at.selectbox[0].set_value("24231627").run()
+    at.selectbox(key="filter_star").set_value("24231627").run()
     assert [m.value for m in at.metric] == ["9/27", "3/27"]
-    at.selectbox[2].set_value(2250).run()
+    at.selectbox(key="filter_depth").set_value(2250).run()
     assert [m.value for m in at.metric] == ["9/9", "3/9"]
-    at.selectbox[1].set_value("central_block").run()
+    at.selectbox(key="filter_mask").set_value("central_block").run()
     assert [m.value for m in at.metric] == ["3/3", "1/3"]
-    at.selectbox[5].set_value("exact").run()
+    at.selectbox(key="filter_outcome").set_value("exact").run()
     assert [m.value for m in at.metric] == ["3/3", "1/3"]
     assert any("Showing 4 / 6 selected rows" in m.value for m in at.markdown)
-    at.selectbox[6].set_value("search_error").run()
+    at.selectbox(key="filter_status").set_value("search_error").run()
     assert any("No rows match" in i.value for i in at.info)
     assert not at.exception and not at.get("download_button")[0].label.startswith(
         "Download filtered"

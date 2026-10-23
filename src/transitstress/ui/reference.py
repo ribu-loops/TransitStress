@@ -8,6 +8,7 @@ from transitstress.artifacts import json_read, numeric_read
 from transitstress.config import app_mode
 from transitstress.errors import TransitStressError
 from transitstress.ui.charts import PIPELINES, baseline_context, folded, periodogram, timeline
+from transitstress.ui.presentation import show_chart
 
 BUNDLE = Path(__file__).resolve().parents[3] / "demo" / "t08"
 
@@ -130,9 +131,9 @@ def main() -> None:
         st.stop()
     st.caption(
         "Full-baseline context · injected input · normalized flux is dimensionless. "
-        "Blue shading marks the displayed time range below."
+        "Yellow shading marks the displayed time range below."
     )
-    st.plotly_chart(
+    show_chart(
         baseline_context(arrays, bounds, selected),
         width="stretch",
         config={"displayModeBar": False},
@@ -141,7 +142,7 @@ def main() -> None:
     if view == "Processed flux":
         layout = st.radio("Processed-flux layout", ["Stacked A/B", "Overlay"], horizontal=True)
     st.write(f"Displayed time range: {selected[0]:.2f}–{selected[1]:.2f} relative days")
-    st.plotly_chart(
+    show_chart(
         timeline(arrays, view, list(selected), layout),
         width="stretch",
         config={"displayModeBar": False},
@@ -155,9 +156,9 @@ def main() -> None:
     with st.expander("Broad BLS and fitted-period folds"):
         st.write(
             "BLS likelihood power is a diagnostic, not planet probability. "
-            "Purple dotted line: synthetic injected period, annotated after search."
+            "Yellow dotted line: synthetic injected period, annotated after search."
         )
-        st.plotly_chart(
+        show_chart(
             periodogram(arrays, truth["period_days"]),
             width="stretch",
             config={"displayModeBar": False},
@@ -166,7 +167,7 @@ def main() -> None:
             "Fold period source: each configuration's fitted top peak. "
             "All data points shown; no binned summary."
         )
-        st.plotly_chart(folded(arrays, rows), width="stretch", config={"displayModeBar": False})
+        show_chart(folded(arrays, rows), width="stretch", config={"displayModeBar": False})
     with st.expander("Numbers and provenance"):
         st.dataframe(
             [

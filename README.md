@@ -1,8 +1,8 @@
 # TransitStress
 
-**Does removing slow brightness variation also remove a small transit-like dip?**
+**How do processing choices and missing observations affect an artificial transit signal?**
 
-A light curve records brightness over time. Stars and instruments can vary slowly;
+TransitStress is a learning and analysis workbench. A light curve records brightness over time. Stars and instruments can vary slowly;
 a planet passing in front of a star can produce a much smaller, repeated dip.
 Detrending estimates and removes the slow variation, but can also weaken that dip.
 
@@ -13,10 +13,10 @@ Box Least Squares (BLS), a method for finding repeated dips. The search is blind
 the injected timing is used only afterward to score and explain the saved result.
 Synthetic injections are experiments, **not discovered planets**.
 
-
-*Real T10 application viewport. Its historical “G3/G4 pending” label is preserved;
-current scoped review status is below.
-[Static walkthrough](docs/DEMO_WALKTHROUGH.md).*
+The revised interface leads through one saved worked example: observation →
+artificial signal → processing comparison → interpretation → evidence.
+[Current walkthrough and verification](docs/UI_REVISION.md). Historical T08/T10
+screenshots and release candidates are retained, but do not verify this revision.
 
 ## What was built and measured
 
@@ -65,7 +65,11 @@ inputs or reproduce the full evaluation. Original failures and distinct source
 identities remain in [the evidence ledger](docs/T11_CLOSEOUT.md).
 The historical freeze does not authorize corrected-source evaluation or resume.
 
-**Local release candidate only: T11 remains WIP and independent G4 is pending.**
+**Local presentation candidate only: visual feedback and independent revision review
+are pending. T11 remains WIP and independent G4 is pending.**
+The current dependency audit has unresolved certifi/Pillow findings; remediation
+and independent dependency review have not passed. Privacy/publication holds remain.
+No dependency change or repeat advisory audit is part of this UI revision.
 Author study is deferred and unassessed. Native Windows execution/link proof is
 unavailable, not passed; hosted Ubuntu/Windows CI awaits a later authorized push.
 Public repository, PyPI release and hosted demo destinations are pending.
@@ -93,11 +97,24 @@ Open the loopback URL printed by Streamlit; stop with Ctrl+C.
 
 ## Explore saved results or compute locally
 
-**Precomputed demo:** choose **Explore a curated case** or **Benchmark**, select a
-case/filter, compare A/B plots and numbers, then download the table or selected
-pair evidence ZIP. Three evaluation cases have detailed arrays; other rows are
-clearly summary-only. Navigation, filters and display zoom do not run science.
-Demo mode rejects uploads and new computation.
+**Precomputed demo, three steps:**
+
+1. On **Start**, choose **Explore a worked example**. Read the real prepared TESS
+   observation and the artificial signal added to it.
+2. Use **Compare**, then **Interpret**. White A / 0.5-day and yellow B / 1.5-day
+   plots share scales. In this deliberately selected disagreement case, B retains
+   more depth while A recovers the intended period and timing. It is not typical
+   of every case.
+3. Open **Evidence** to download the complete saved pair, or **Browse benchmark**
+   for all 390 rows, filter denominators, controls and summary-only cases.
+
+Normalized flux is brightness relative to a reference level near 1. A depth in
+ppm is parts per million; period is the time between repeated dips. The processing
+window is the moving interval used to estimate slow variation. Three evaluation
+cases have detailed arrays. Navigation, filters and display zoom do not run
+science; demo mode denies uploads and new computation. **Methods** keeps precise
+definitions and provenance accessible. Local analysis is an advanced capability
+requiring a separate local-mode launch and explicit **Run comparison**.
 
 **Local computation:** launch separately:
 

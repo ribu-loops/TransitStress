@@ -10,9 +10,10 @@ gatherUsageStats = false
 showErrorDetails = "none"
 
 [theme]
-base = "light"
-primaryColor = "#2457C5"
-backgroundColor = "#F7F8FA"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#172033"
+base = "dark"
+primaryColor = "#8A6500"
+linkColor = "#F4CE68"
+backgroundColor = "#111827"
+secondaryBackgroundColor = "#1B2638"
+textColor = "#F1F5F9"
 font = "sans-serif"

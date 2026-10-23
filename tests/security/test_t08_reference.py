@@ -56,4 +56,7 @@ def test_native_theme_retains_security_defaults():
     assert settings["server"] == dict(enableCORS=True, enableXsrfProtection=True, maxUploadSize=5)
     assert settings["browser"]["gatherUsageStats"] is False
     assert settings["client"]["showErrorDetails"] == "none"
-    assert settings["theme"]["textColor"] == "#172033"
+    assert settings["theme"]["textColor"] == "#F1F5F9"
+    assert settings["theme"]["base"] == "dark"
+    assert settings["theme"]["primaryColor"] == "#8A6500"
+    assert settings["theme"]["linkColor"] == "#F4CE68"

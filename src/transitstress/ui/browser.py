@@ -8,6 +8,7 @@ from transitstress.errors import TransitStressError
 from transitstress.ui import local, reference
 from transitstress.ui.bundle import DemoBundle, case_zip, counts
 from transitstress.ui.charts import PIPELINES, baseline_context, folded, periodogram, timeline
+from transitstress.ui.presentation import show_chart
 from transitstress.ui.public_cache import public_bundle
 
 LIMITATIONS = (
@@ -107,31 +108,64 @@ def sanity_view(bundle: DemoBundle) -> None:
 
 def start(bundle: DemoBundle, mode: str) -> None:
     st.title("Does the dip survive?")
-    st.write("See whether preprocessing preserves a signal deliberately added to a light curve.")
     st.write(
-        "Observe brightness over time → add a periodic synthetic dip → compare two "
-        "rolling-median detrending windows → inspect a blind BLS top peak."
+        "How do two processing configurations and missing observations affect recovery "
+        "of an artificial transit signal?"
     )
-    st.button(
-        "Explore a curated case",
-        type="primary",
-        on_click=navigate,
-        args=("Workbench", "Curated examples"),
-    )
-    st.button("Open local workbench", on_click=navigate, args=("Workbench", "Local experiment"))
-    if mode == "demo":
-        st.info(
-            "Demo browses precomputed artifacts. Open local workbench shows the launch "
-            "instructions; uploads and fresh computation are denied here."
-        )
     st.write(
-        "Frozen evaluation: 135 injection cases across five stars; two configurations "
-        "process each case. Local workbench runs are exploratory and never enter this table. "
-        "No illustrative fixtures are presented as measured findings."
+        "A light curve records a star's brightness over time. Removing slow brightness "
+        "changes can also weaken a small dip. Keeping its depth and finding its timing "
+        "both matter when looking for repeated dimming."
     )
-    recovery_cards(bundle.rows)
-    sanity_view(bundle)
-    safety_caption()
+    st.button("Explore a worked example", type="primary", on_click=open_example)
+    st.button("Browse benchmark", on_click=navigate, args=("Benchmark",))
+    st.divider()
+    st.subheader("One experiment, four steps")
+    st.markdown(
+        "1. **Begin with real telescope measurements.** Use prepared TESS brightness data.\n"
+        "2. **Insert an artificial signal.** Add a known, repeated box-shaped dimming.\n"
+        "3. **Process it two ways.** Compare A / 0.5-day and B / 1.5-day detrending windows.\n"
+        "4. **Compare recovery and depth.** Score the saved blind searches afterward."
+    )
+    st.caption(
+        "A processing window is the full moving time interval used to estimate slow "
+        "variation. Only that window differs between these two configurations."
+    )
+    st.info(
+        "Start with the saved disagreement example: B keeps more artificial depth, "
+        "while A recovers the intended period and timing. Selected after analysis to "
+        "explain this distinction, not to represent every case."
+    )
+    st.caption(
+        "Offline saved evidence: no upload or fresh computation needed. Five evaluation "
+        "stars, 135 correlated injection cases, two detrending configurations, paired "
+        "processing. Artificial signals are not planet discoveries."
+    )
+    with st.expander("Methods, advanced local analysis and separate sanity check"):
+        st.button("Read methods", on_click=navigate, args=("Methods",))
+        if mode == "local":
+            st.button(
+                "Open advanced local workbench",
+                on_click=navigate,
+                args=("Workbench", "Local experiment"),
+            )
+        else:
+            st.write(
+                "Advanced local analysis requires a separate local-mode launch on your own "
+                "computer. Demo mode denies uploads and computation. Workbench provides "
+                "launch instructions and saved examples that work here immediately."
+            )
+        sanity_view(bundle)
+
+
+def open_example() -> None:
+    """Change presentation state only; preserve private local drafts."""
+    navigate("Workbench", "Curated examples")
+    st.session_state["guided_case"] = next(
+        c["case_id"] for c in public_bundle().manifest["curated"] if c["stem"] == "example3"
+    )
+    change_step(STEPS[0])
+    st.session_state.pop("curated_case_widget", None)
 
 
 def summary_table(rows: list[dict], detailed: set[str]) -> list[dict]:
@@ -173,165 +207,382 @@ def tic_id(row: dict) -> str:
     return row["curve_id"].split("-", 1)[0].removeprefix("tic")
 
 
+STEPS = [
+    "1 · Observation",
+    "2 · Artificial signal",
+    "3 · Compare",
+    "4 · Interpret",
+    "5 · Evidence",
+]
+
+
+def remember_step() -> None:
+    st.session_state["reading_step"] = st.session_state["reading_choice"]
+
+
+def change_step(step: str) -> None:
+    st.session_state["reading_step"] = step
+    st.session_state["reading_choice"] = step
+
+
+def remember_case() -> None:
+    st.session_state["guided_case"] = st.session_state["curated_case_widget"]
+    change_step(STEPS[0])
+
+
+def remember_display(cid: str) -> None:
+    st.session_state.setdefault("saved_display", {})[cid] = {
+        key: st.session_state[key]
+        for key in ("public_time_range", "public_view", "public_layout")
+        if key in st.session_state
+    }
+
+
+def saved_chart_controls(cid: str, arrays: dict, bounds: list) -> None:
+    saved = st.session_state.setdefault("saved_display", {}).get(cid, {})
+    if st.session_state.get("public_display_case") != cid:
+        for key in ("public_time_range", "public_view", "public_layout"):
+            st.session_state.pop(key, None)
+        st.session_state["public_display_case"] = cid
+    for key, default in (
+        ("public_time_range", tuple(bounds)),
+        ("public_view", "Processed flux"),
+        ("public_layout", "Stacked A/B"),
+    ):
+        if key not in st.session_state:
+            st.session_state[key] = saved.get(key, default)
+    view = st.radio(
+        "Timeline view",
+        ["Processed flux", "Prepared & injected", "Fitted trends"],
+        horizontal=True,
+        key="public_view",
+        on_change=remember_display,
+        args=(cid,),
+    )
+    zoom = st.slider(
+        "Displayed time range (relative days)",
+        float(bounds[0]),
+        float(bounds[1]),
+        value=None,
+        step=0.01,
+        format="%.2f days",
+        key="public_time_range",
+        on_change=remember_display,
+        args=(cid,),
+    )
+    st.button("Reset to full baseline", on_click=_reset_public, args=(tuple(bounds), cid))
+    layout = (
+        st.radio(
+            "Processed-flux layout",
+            ["Stacked A/B", "Overlay"],
+            horizontal=True,
+            key="public_layout",
+            on_change=remember_display,
+            args=(cid,),
+        )
+        if view == "Processed flux"
+        else "Stacked A/B"
+    )
+    if zoom[0] >= zoom[1]:
+        st.warning("Displayed time range: choose an end later than the start, or reset.")
+        return
+    st.caption(
+        "Full-baseline context: every retained injected-input dot; yellow shading marks "
+        "the displayed interval below. Blank intervals have no observations."
+    )
+    show_chart(
+        baseline_context(arrays, bounds, zoom),
+        width="stretch",
+        config={"displayModeBar": False},
+    )
+    if view == "Processed flux":
+        st.write(
+            "**Read the comparison.** Each dot is a processed brightness measurement. "
+            "A uses white circles; B uses yellow diamonds. Axes show time in days and "
+            "dimensionless normalized flux near 1. Both panels use the same fixed scale "
+            "and aligned gaps."
+        )
+        st.caption(
+            "Look for repeated dips amid background variation. Dots alone do not establish "
+            "recovery; Interpret explains the saved period/timing result."
+        )
+    elif view == "Prepared & injected":
+        st.write(
+            "White open circles show the prepared telescope background; yellow dots show "
+            "the same timestamps after artificial dimming. Axes show days and normalized "
+            "flux (relative brightness). The injected difference may be subtle at this scale."
+        )
+    else:
+        st.write(
+            "Yellow dots show injected input. White solid A and yellow dashed B lines show "
+            "saved moving-median trends. Axes show days and normalized flux. Notice their "
+            "different responses to brightness changes; lines stop at segment gaps. "
+            "A trend estimates slow variation, not the star's physical behavior."
+        )
+    show_chart(
+        timeline(arrays, view, list(zoom), layout),
+        width="stretch",
+        config={"displayModeBar": False},
+    )
+    st.caption(
+        f"All {len(arrays['time_days']):,} samples per configuration. Display-only zoom; "
+        "matched time and fixed full-extrema flux limits; aligned gaps. "
+        "No smoothing, averaging, clipping or downsampling."
+    )
+
+
 def detail(bundle: DemoBundle, cid: str) -> None:
     rows = [r for r in bundle.rows if r["case_id"] == cid]
     row = rows[0]
-    st.text(f"Case ID: {cid}")
-    st.caption(f"TIC {tic_id(row)} · {row['case_kind']} · {row['mask_name']}")
     if cid not in bundle.arrays:
         st.info(
-            "Summary-only row: detailed evidence unavailable in this demo. "
-            "Download the saved pair below. To inspect full arrays locally, restore "
-            "the matching original run and validate it; an exploratory rerun cannot "
-            "replace frozen evidence."
-        )
-        st.code(
-            "uv run --locked python -m transitstress validate-artifact "
-            "--path runs/t07_evaluation_20261020T1857Z",
-            language="powershell",
+            "Summary-only row: detailed evidence unavailable in this demo. Download the "
+            "saved pair below. Full arrays require the matching original validated run; "
+            "an exploratory rerun cannot replace frozen evidence."
         )
     else:
         selected = next(c for c in bundle.manifest["curated"] if c["case_id"] == cid)
-        st.subheader("Precomputed evaluation result")
-        st.write("Selection: " + "; ".join(selected["roles"]))
-        st.write(
-            f"Synthetic injection · {row['true_period_days']:g} days · "
-            f"{row['true_depth'] * 1e6:g} ppm · "
-            f"{row['true_duration_days'] * 24:g} hours · {row['mask_name']}"
-        )
-        st.caption(
-            "Prepared TESS PDCSAP background, normalized and 10-minute binned; "
-            "not raw telescope pixels. All retained samples shown."
-        )
-        st.write(
-            f"{row['n_observed']:,} retained / {row['n_original']:,} prepared bins · "
-            f"{row['observed_transits']}/{len(row['full_centers_days'])} full events "
-            f"sufficiently observed · {row['total_in_transit_points']} in-transit points."
-        )
-        reference.result_cards(rows)
-        if selected["stem"] == "example3":
-            st.write(
-                "The central block removes the event near day 11.6793; three full events "
-                "remain sufficiently observed. A matches the injected timing. B retains "
-                "more incremental depth but its strongest peak is elsewhere. Its background "
-                "already peaks at that other period, consistent with background structure "
-                "outranking the injection, without identifying its physical origin."
-            )
-        elif selected["stem"] == "example2":
-            st.write(
-                "Both top peaks miss the injected timing/period despite eligible coverage. "
-                "This is the smallest eligible saved retention ratio, selected after analysis."
-            )
-        else:
-            st.write(
-                "Both configurations match the injected period and timing in this selected "
-                "example. One success does not describe every case."
-            )
-        arrays = bundle.arrays[cid]
-        bounds = row["original_bounds_days"]
-        if (
-            st.session_state.get("public_display_case") != cid
-            or "public_time_range" not in st.session_state
-        ):
-            st.session_state["public_time_range"] = tuple(bounds)
-            st.session_state["public_display_case"] = cid
-        view = st.radio(
-            "Timeline view",
-            ["Processed flux", "Prepared & injected", "Fitted trends"],
+        st.caption(f"Saved evaluation · TIC {tic_id(row)} · artificial injection")
+        if "reading_choice" not in st.session_state:
+            st.session_state["reading_choice"] = st.session_state.get("reading_step", STEPS[0])
+        step = st.radio(
+            "Reading guide",
+            STEPS,
             horizontal=True,
+            key="reading_choice",
+            on_change=remember_step,
         )
-        zoom = st.slider(
-            "Displayed time range (relative days)",
-            float(bounds[0]),
-            float(bounds[1]),
-            value=None,
-            step=0.01,
-            format="%.2f days",
-            key="public_time_range",
-        )
-        st.button("Reset to full baseline", on_click=_reset_public, args=(tuple(bounds),))
-        layout = (
-            st.radio("Processed-flux layout", ["Stacked A/B", "Overlay"], horizontal=True)
-            if view == "Processed flux"
-            else "Stacked A/B"
-        )
-        if zoom[0] < zoom[1]:
-            st.caption("Full-baseline context · injected input · normalized flux is dimensionless.")
-            st.plotly_chart(
-                baseline_context(arrays, bounds, zoom),
-                width="stretch",
-                config={"displayModeBar": False},
-            )
-            st.plotly_chart(
-                timeline(arrays, view, list(zoom), layout),
-                width="stretch",
-                config={"displayModeBar": False},
-            )
-        else:
-            st.warning("Displayed time range: choose an end later than the start, or reset.")
-        st.caption(
-            f"All {len(arrays['time_days']):,} samples per configuration. "
-            "Display-only zoom; matched time and fixed full-extrema flux limits; "
-            "aligned gaps. No smoothing, averaging, clipping or downsampling."
-        )
-        with st.expander("Broad BLS and fitted-period folds"):
+        arrays, bounds = bundle.arrays[cid], row["original_bounds_days"]
+        if step == STEPS[0]:
+            st.subheader("Begin with a star's brightness")
             st.write(
-                "BLS likelihood power, not planet probability. Purple line: synthetic "
-                "truth annotated after search. Folds use each fitted top peak."
+                "Real TESS observations, prepared with PDCSAP correction, normalization "
+                "and 10-minute binning; these are not raw telescope pixels."
             )
-            st.plotly_chart(
-                periodogram(arrays, row["true_period_days"]),
+            st.write(
+                "**Normalized flux** is brightness divided by a reference level: 1 is that "
+                "level; 0.999 is 0.1% fainter. Each white open circle is a retained 10-minute "
+                "measurement. Time is in days from the recorded starting epoch."
+            )
+            figure = timeline(arrays, "Prepared & injected", bounds)
+            figure.data = (figure.data[0],)
+            show_chart(figure, width="stretch", config={"displayModeBar": False})
+            st.write(
+                f"**Notice the missing observations.** {row['n_observed']:,} of "
+                f"{row['n_original']:,} prepared bins remain after the "
+                f"{row['mask_name']} mask. Blank intervals are gaps, not interpolated data. "
+                "For central_block, the middle 20% of elapsed time is removed; random_missing "
+                "removes 20% of bins, while original retains the prepared timestamps. "
+                "This is the masked background; no separate pre-mask timeline is packaged."
+            )
+            st.caption(
+                "Natural and instrumental variation can resemble signals. This background "
+                "is not a verified planet-free observation."
+            )
+        elif step == STEPS[1]:
+            st.subheader("Add a known artificial dimming")
+            st.write(
+                f"The saved experiment subtracts a box-shaped dip of "
+                f"**{row['true_depth'] * 1e6:g} ppm** every "
+                f"**{row['true_period_days']:g} days**, lasting "
+                f"**{row['true_duration_days'] * 24:g} hours**."
+            )
+            st.write(
+                "**ppm** means parts per million of reference brightness; 1,000 ppm is "
+                "a 0.1% dip. **Period** is the time between repeated dips. These are artificial "
+                "injection settings, not a measured planet. A transit is a brief dimming "
+                "as something passes in front of a star."
+            )
+            st.write(
+                "White open circles show the prepared background; yellow dots show the "
+                "same observations with artificial dimming. Axes show days and "
+                "dimensionless normalized flux. Notice the shared gaps: adding a signal "
+                "does not create missing observations."
+            )
+            show_chart(
+                timeline(arrays, "Prepared & injected", bounds),
                 width="stretch",
                 config={"displayModeBar": False},
             )
-            st.plotly_chart(folded(arrays, rows), width="stretch", config={"displayModeBar": False})
-    with st.expander("Exact saved values, null reasons and units"):
+            st.caption(
+                f"{row['observed_transits']}/{len(row['full_centers_days'])} full artificial "
+                f"events sufficiently observed; {row['total_in_transit_points']} in-transit "
+                "points. The dip may be subtle at this honest full flux scale. Its known "
+                "timing was used only after both blind searches."
+            )
+        elif step == STEPS[2]:
+            st.subheader("Compare two processing windows")
+            st.write(
+                "**A / 0.5-day detrending window** uses a shorter moving interval; "
+                "**B / 1.5-day detrending window** uses a longer interval of the same "
+                "rolling-median method. Window length is the full span around each "
+                "measurement used to estimate slow variation, different from the period "
+                "between artificial dips."
+            )
+            saved_chart_controls(cid, arrays, bounds)
+        elif step == STEPS[3]:
+            st.subheader("Depth and recovery answer different questions")
+            st.write(
+                "**Recovery** checks whether the strongest search peak matches both "
+                "artificial period and timing. **Paired retained depth** measures the "
+                "incremental dimming left after processing injected and uninjected data "
+                "on identical timestamps. Retention ratio = retained / injected depth. "
+                "Depth is in ppm (parts per million); fitted period is in days."
+            )
+            reference.result_cards(rows)
+            if selected["stem"] == "example3":
+                st.write(
+                    "**What happened here:** the central block removes the event near day "
+                    "11.6793; three full events remain sufficiently observed. A matches the "
+                    "injected timing. B retains more incremental depth but its strongest peak "
+                    "is elsewhere. Its uninjected background already peaks at that other "
+                    "period, consistent with background structure outranking the injection."
+                )
+            elif selected["stem"] == "example2":
+                st.write(
+                    "Both strongest peaks miss the injected period/timing despite eligible "
+                    "coverage. Selected after analysis for the smallest eligible saved "
+                    "retention ratio, not as a typical outcome."
+                )
+            else:
+                st.write(
+                    "Both configurations match the injected period and timing in this "
+                    "selected success. One success does not describe every case."
+                )
+            st.warning(
+                "One selected case cannot establish general configuration superiority or "
+                "identify a peak's physical origin. BLS and geometric matches are diagnostics, "
+                "not planet confirmation or calibrated probabilities. A nonmatching "
+                "background top peak does not prove causality."
+            )
+            with st.expander("Exact recovery and coverage criteria"):
+                st.write(
+                    "After blind search: period error ≤1% AND fitted-center error ≤half "
+                    "the injected duration at every sufficiently observed true center. "
+                    "Coverage: ≥2 full events with ≥3 points each and ≥6 in-transit points "
+                    "overall. Half/double-period peaks stay separate."
+                )
+        else:
+            st.subheader("Inspect the saved evidence")
+            st.write(
+                "Download the complete A/B pair, numeric arrays, units, settings and "
+                "provenance. These are historical saved results; display changes and "
+                "downloads do not rerun the experiment."
+            )
+            with st.expander("Broad BLS and fitted-period folds"):
+                st.write(
+                    "The periodogram shows saved search likelihood power over trial periods "
+                    "in days. A is white solid; B yellow dashed. Yellow dotted vertical line: "
+                    "injected period, annotated after search. Notice which peak wins. "
+                    "Power is not planet probability."
+                )
+                show_chart(
+                    periodogram(arrays, row["true_period_days"]),
+                    width="stretch",
+                    config={"displayModeBar": False},
+                )
+                st.write(
+                    "The fold wraps every processed point around its fitted period. White "
+                    "A circles and yellow B crosses share a flux axis; horizontal values "
+                    "are days from each fitted center. A coherent-looking fold alone "
+                    "does not establish an authentic transit."
+                )
+                show_chart(folded(arrays, rows), width="stretch", config={"displayModeBar": False})
+        index = STEPS.index(step)
+        left, right = st.columns(2)
+        left.button(
+            "← Previous",
+            disabled=index == 0,
+            on_click=change_step,
+            args=(STEPS[max(0, index - 1)],),
+            width="stretch",
+        )
+        right.button(
+            "Next →" if index < 4 else "Back to observation",
+            on_click=change_step,
+            args=(STEPS[index + 1] if index < 4 else STEPS[0],),
+            width="stretch",
+        )
+    with st.expander("Exact saved values, case ID, null reasons and units"):
+        st.text(f"Case ID: {cid}")
+        if cid in bundle.arrays:
+            st.caption("Selection rule: " + "; ".join(selected["roles"]))
         st.json(rows)
-    st.download_button(
-        "Download selected pair evidence ZIP",
-        case_zip(bundle, cid),
-        file_name=f"frozen-case-{cid[:16]}.zip",
-        mime="application/zip",
-        on_click="ignore",
-    )
+    if cid not in bundle.arrays or st.session_state.get("reading_choice") == STEPS[4]:
+        st.download_button(
+            "Download selected pair evidence ZIP",
+            case_zip(bundle, cid),
+            file_name=f"frozen-case-{cid[:16]}.zip",
+            mime="application/zip",
+            on_click="ignore",
+        )
 
 
-def _reset_public(bounds: tuple[float, float]) -> None:
+def _reset_public(bounds: tuple[float, float], cid: str) -> None:
     st.session_state["public_time_range"] = bounds
+    remember_display(cid)
 
 
 def curated_workbench(bundle: DemoBundle, mode: str = "demo") -> None:
-    st.title("Workbench · precomputed examples")
+    st.title("Worked example")
     st.info(
-        (
-            "Demo mode denies uploads and new computation. "
-            if mode == "demo"
-            else "Choose Local experiment in the sidebar for an exploratory run. "
-        )
-        + "Selecting a saved case only changes the display; there is no Run simulation."
+        "Demo mode denies uploads and new computation. Saved evidence only."
+        if mode == "demo"
+        else "Saved evidence only. Advanced local experiments are separate in the sidebar."
     )
-    with st.expander("Launch the local exploratory workbench"):
-        st.write(
-            "Use your own checkout with its locked environment and pinned offline data. "
-            "Local launches bind to loopback; this demo never browses a local cache."
-        )
-        st.code(
-            '$env:TRANSITSTRESS_MODE = "local"\n'
-            "uv run --locked streamlit run app.py --server.address 127.0.0.1",
-            language="powershell",
-        )
     examples = bundle.manifest["curated"]
+    default = next(c["case_id"] for c in examples if c["stem"] == "example3")
+    if "curated_case_widget" not in st.session_state:
+        st.session_state["curated_case_widget"] = st.session_state.get("guided_case", default)
     cid = st.selectbox(
         "Curated detailed case",
         [c["case_id"] for c in examples],
+        key="curated_case_widget",
+        on_change=remember_case,
         format_func=lambda value: next(
-            c["roles"][0].split(":")[0] + " · " + value[:12]
+            {
+                "example1": "Selected success",
+                "example2": "Lowest eligible retention",
+                "example3": "Recovery disagreement · start here",
+            }[c["stem"]]
             for c in examples
             if c["case_id"] == value
         ),
     )
+    st.session_state["guided_case"] = cid
+    st.caption(
+        "Three selected cases with full saved evidence. Each illustrates one outcome; "
+        "none represents all 135 correlated injection cases."
+    )
     detail(bundle, cid)
-    safety_caption()
+    with st.expander("Advanced local workbench · availability and launch"):
+        st.write(
+            "Local mode adds private CSV input and a bounded exploratory experiment with "
+            "an explicit Run comparison button. Use your own loopback server and locked "
+            "environment. No Run or upload is available in this demo."
+        )
+        st.code(
+            "TRANSITSTRESS_MODE=local uv run --locked --offline --no-sync "
+            "streamlit run app.py --server.address 127.0.0.1",
+            language="bash",
+        )
+    st.button("Browse all benchmark results", on_click=navigate, args=("Benchmark",))
+
+
+def remember_filters() -> None:
+    st.session_state["benchmark_filters"] = {
+        key: st.session_state[key]
+        for key in (
+            "filter_star",
+            "filter_mask",
+            "filter_depth",
+            "filter_family",
+            "filter_kind",
+            "filter_outcome",
+            "filter_status",
+        )
+        if key in st.session_state
+    }
 
 
 def benchmark(bundle: DemoBundle) -> None:
@@ -348,11 +599,48 @@ def benchmark(bundle: DemoBundle) -> None:
         "denominators are both 135 per configuration; coverage exclusions 0. "
         "Filters below change the selected denominator, never the frozen totals."
     )
+    st.write(
+        "**Read the denominators first.** Each of 135 artificial injection cases is "
+        "processed twice, giving 270 injection rows. Thirty real-background and 90 "
+        "Gaussian-null rows bring the table to 390. Cases reuse five stars and are "
+        "correlated. Exact means period AND timing agreement, not depth retention."
+    )
+    st.caption(
+        "ppm = parts per million of reference brightness; period = days between "
+        "artificial dips. Missingness removes observations. A and B use full "
+        "processing windows of 0.5 and 1.5 days."
+    )
+    for key, value in st.session_state.get("benchmark_filters", {}).items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+    st.subheader("Choose a subset")
     stars = sorted({tic_id(r) for r in bundle.rows})
-    star = st.selectbox("Evaluation star (TIC)", ["All", *stars])
-    mask = st.selectbox("Missingness", ["All", "original", "random_missing", "central_block"])
-    depth = st.selectbox("Injected depth (ppm)", ["All", 250, 750, 2250])
-    family = st.selectbox("Injected family period (days)", ["All", 1.73, 3.41, 6.83])
+    filters = st.columns(2)
+    with filters[0]:
+        star = st.selectbox(
+            "Evaluation star (TIC)", ["All", *stars], key="filter_star", on_change=remember_filters
+        )
+    with filters[1]:
+        mask = st.selectbox(
+            "Missingness",
+            ["All", "original", "random_missing", "central_block"],
+            key="filter_mask",
+            on_change=remember_filters,
+        )
+    with filters[0]:
+        depth = st.selectbox(
+            "Injected depth (ppm)",
+            ["All", 250, 750, 2250],
+            key="filter_depth",
+            on_change=remember_filters,
+        )
+    with filters[1]:
+        family = st.selectbox(
+            "Injected family period (days)",
+            ["All", 1.73, 3.41, 6.83],
+            key="filter_family",
+            on_change=remember_filters,
+        )
     base = [
         r
         for r in bundle.rows
@@ -366,23 +654,33 @@ def benchmark(bundle: DemoBundle) -> None:
         "Cards use selected injection cases before table-only outcome/kind filters. "
         "Depth/period filters omit controls because controls have no injection truth."
     )
-    kind = st.selectbox("Table case kind", ["All", "injection", "uninjected_real", "gaussian_null"])
-    outcome = st.selectbox(
-        "Table outcome",
-        [
-            "All",
-            "exact",
-            "other_peak",
-            "half_period_peak",
-            "double_period_peak",
-            "insufficient_coverage",
-            "not_applicable",
-        ],
-    )
-    status = st.selectbox(
-        "Table processing status",
-        ["All", "ok", "invalid_input", "detrend_error", "search_error", "artifact_error"],
-    )
+    with st.expander("Table-only filters · kind, outcome and processing status"):
+        kind = st.selectbox(
+            "Table case kind",
+            ["All", "injection", "uninjected_real", "gaussian_null"],
+            key="filter_kind",
+            on_change=remember_filters,
+        )
+        outcome = st.selectbox(
+            "Table outcome",
+            [
+                "All",
+                "exact",
+                "other_peak",
+                "half_period_peak",
+                "double_period_peak",
+                "insufficient_coverage",
+                "not_applicable",
+            ],
+            key="filter_outcome",
+            on_change=remember_filters,
+        )
+        status = st.selectbox(
+            "Table processing status",
+            ["All", "ok", "invalid_input", "detrend_error", "search_error", "artifact_error"],
+            key="filter_status",
+            on_change=remember_filters,
+        )
     shown = [
         r
         for r in base
@@ -400,8 +698,10 @@ def benchmark(bundle: DemoBundle) -> None:
         "dimensionless relative flux; retention is a ratio; BLS power is likelihood. "
         "Cards/controls labelled ppm use depth × 1,000,000. Nulls retain reasons in JSON."
     )
+    st.subheader("Inspect results and evidence")
     if shown:
-        st.dataframe(summary_table(shown, set(bundle.arrays)), hide_index=True, width="stretch")
+        with st.expander("Full selected result table · all columns and IDs"):
+            st.dataframe(summary_table(shown, set(bundle.arrays)), hide_index=True, width="stretch")
         st.download_button(
             "Download filtered results CSV",
             results_csv(shown),
@@ -484,9 +784,7 @@ def methods(bundle: DemoBundle) -> None:
         "oversample 10; frequency factor 1. Original-baseline grid reused across "
         "masks and configurations. Injection truth never guides either blind stage."
     )
-    with st.expander(
-        "Precise injection, recovery, coverage and retention definitions", expanded=True
-    ):
+    with st.expander("Precise injection, recovery, coverage and retention definitions"):
         st.code(
             "r(t) = ((t - t0 + P/2) mod P) - P/2\n"
             "I(t) = (-D/2 <= r(t) < D/2)\nf_injected = f_background - depth * I(t)\n"
@@ -503,24 +801,26 @@ def methods(bundle: DemoBundle) -> None:
             "Null measurements carry reasons; retention is never clamped to [0,1]."
         )
     safety_caption()
-    sanity_view(bundle)
+    with st.expander("Separate real-signal sanity check · Pi Mensae c"):
+        sanity_view(bundle)
     identity = bundle.identity["identity"]
     st.subheader("Artifact and software provenance")
-    st.text(
-        f"Protocol: {bundle.manifest['protocol']}\n"
-        f"Run SHA-256: {bundle.manifest['run_id']}\n"
-        f"Exact cohort SHA-256: {identity['data']['manifest']['cohort_hash']}\n"
-        f"Scientific source SHA-256: {identity['scientific_source_hash']}\n"
-        f"Lock SHA-256: {identity['lock_hash']}\nBundle SHA-256: {bundle.fingerprint}\n"
-        f"Original run completed: {bundle.manifest['finished_utc']}\n"
-        f"Presentation packaged: {bundle.manifest['packaged_utc']}"
-    )
-    st.caption(
-        "Scientific identity uses source/data/settings/dependencies, not whole-repository "
-        "HEAD. Later UI/docs commits do not change the frozen run. Full bundle "
-        "checksums and all selected numeric payloads are validated before navigation. "
-        "Hashes detect corruption; they do not authenticate an untrusted checkout."
-    )
+    with st.expander("Protocol, source and bundle fingerprints"):
+        st.text(
+            f"Protocol: {bundle.manifest['protocol']}\n"
+            f"Run SHA-256: {bundle.manifest['run_id']}\n"
+            f"Exact cohort SHA-256: {identity['data']['manifest']['cohort_hash']}\n"
+            f"Scientific source SHA-256: {identity['scientific_source_hash']}\n"
+            f"Lock SHA-256: {identity['lock_hash']}\nBundle SHA-256: {bundle.fingerprint}\n"
+            f"Original run completed: {bundle.manifest['finished_utc']}\n"
+            f"Presentation packaged: {bundle.manifest['packaged_utc']}"
+        )
+        st.caption(
+            "Scientific identity uses source/data/settings/dependencies, not whole-repository "
+            "HEAD. Later UI/docs commits do not change the frozen run. Full bundle "
+            "checksums and all selected numeric payloads are validated before navigation. "
+            "Hashes detect corruption; they do not authenticate an untrusted checkout."
+        )
     with st.expander("Exact products, epochs, dependencies and producing commit"):
         st.json(bundle.identity)
     st.download_button(
@@ -548,7 +848,8 @@ def methods(bundle: DemoBundle) -> None:
         "AI assistance: implementation, explanations and builder checks were prepared "
         "with coding-assistant help. Author learning and independent reviews are "
         "separate evidence; no author understanding is inferred. T07 results-only review "
-        "is preserved. G3 product/results and G4 release review remain pending."
+        "is preserved. Historical combined Linux G3 is accepted; this presentation revision "
+        "awaits separate review and author visual feedback. G4 remains pending."
     )
     st.subheader("Offline inspection and local reproduction")
     st.code(
@@ -559,9 +860,10 @@ def methods(bundle: DemoBundle) -> None:
         language="powershell",
     )
     st.caption(
-        "The demo is self-contained. The last command additionally requires the original "
-        "run restored locally. Clone/source-data reproduction, native-link proof, "
-        "current online audit and all-history secret scan remain pending. No release "
+        "The demo is self-contained. The last command requires the original run restored "
+        "locally. Scoped assistant-performed V5 reproduction is recorded separately; "
+        "native Windows proof remains unavailable. Dependency findings remain unresolved, "
+        "with remediation/independent review pending. Privacy holds remain. No release "
         "or deployment is approved. Browsing time measures navigation, not scientific computation."
     )
 
@@ -577,14 +879,18 @@ def main() -> None:
     destination = st.sidebar.radio(
         "Destination", ["Start", "Workbench", "Benchmark", "Methods"], key="destination"
     )
-    st.caption(f"TRANSITSTRESS / {destination.upper()} · {mode.upper()} · G3/G4 PENDING")
+    st.caption(f"TRANSITSTRESS / {destination.upper()} · {mode.upper()} · SAVED ANALYSIS")
     try:
         bundle = public_bundle()
     except TransitStressError as error:
         st.error(str(error))
         st.stop()
     st.sidebar.caption("Data: complete packaged bundle validated · offline · precomputed")
-    st.caption("Public evidence: packaged artifacts validated · precomputed · offline")
+    st.sidebar.caption(
+        "Presentation revision: visual feedback and independent review pending. "
+        "Dependency findings unresolved; release/privacy holds remain. G4 pending."
+    )
+
     if destination == "Start":
         start(bundle, mode)
     elif destination == "Benchmark":

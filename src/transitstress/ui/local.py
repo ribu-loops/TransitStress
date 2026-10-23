@@ -12,6 +12,7 @@ from transitstress.errors import TransitStressError
 from transitstress.ui import reference
 from transitstress.ui.charts import PIPELINES, baseline_context, folded, periodogram, timeline
 from transitstress.ui.controller import BUILT_INS, Request, SessionJob, prepare
+from transitstress.ui.presentation import show_chart
 
 DEFAULTS = dict(
     source="8195886",
@@ -194,12 +195,12 @@ def display_result(job: SessionJob, stale: bool) -> None:
         )
         if selected[0] < selected[1]:
             st.caption("Full-baseline context · injected input · normalized flux is dimensionless.")
-            st.plotly_chart(
+            show_chart(
                 baseline_context(arrays, bounds, selected),
                 width="stretch",
                 config={"displayModeBar": False},
             )
-            st.plotly_chart(
+            show_chart(
                 timeline(arrays, view, list(selected), layout),
                 width="stretch",
                 config={"displayModeBar": False},
@@ -219,12 +220,12 @@ def display_result(job: SessionJob, stale: bool) -> None:
                 "Independent broad BLS likelihood power, not planet probability. "
                 "Synthetic truth annotated after search. Folds use each fitted top peak."
             )
-            st.plotly_chart(
+            show_chart(
                 periodogram(arrays, request.period_days),
                 width="stretch",
                 config={"displayModeBar": False},
             )
-            st.plotly_chart(folded(arrays, rows), width="stretch", config={"displayModeBar": False})
+            show_chart(folded(arrays, rows), width="stretch", config={"displayModeBar": False})
     with st.expander("Numbers, units and provenance"):
         st.dataframe(
             [
@@ -290,8 +291,8 @@ def main() -> None:
         reference.main()
         return
     st.set_page_config(page_title="TransitStress · local workbench", layout="centered")
-    st.caption("TRANSITSTRESS / WORKBENCH · LOCAL · G3/G4 PENDING")
-    st.title("Does the dip survive?")
+    st.caption("ADVANCED LOCAL ANALYSIS · EXPLORATORY · G4 PENDING")
+    st.title("Advanced local workbench")
     st.write(
         "Compare two detrending configurations on a signal deliberately added to a light curve."
     )
@@ -310,6 +311,7 @@ def main() -> None:
             st.session_state[key] = draft[key]
     job = st.session_state["job"]
     st.button("Reset workbench", on_click=reset, disabled=job.running)
+    st.subheader("1 · Choose and confirm input")
     source = st.selectbox(
         "Input light curve",
         [*BUILT_INS, "CSV"],
@@ -358,6 +360,12 @@ def main() -> None:
         "I confirm time is in days and flux/error use the same linear units",
         key="confirmed",
         on_change=remember_draft,
+    )
+    st.subheader("2 · Configure the artificial signal")
+    st.caption(
+        "Period is time between dips; depth in ppm is parts per million of reference "
+        "brightness. A 1,000 ppm dip is 0.1%. A/B processing-window lengths stay fixed "
+        "at 0.5 and 1.5 days. Inputs are drafts until explicit Run comparison."
     )
     # Outside the submission form so edits immediately rerender and mark results stale.
     st.number_input(
