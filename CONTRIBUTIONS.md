@@ -22,10 +22,10 @@ licenses, and being able to explain the code and results. Learning checkpoints
 are deferred: no author answers, understanding, personal coding experience,
 external users, independent human reproduction or outreach are invented here.
 
-Before a later authorized release, rehearse docs/LEARNING.md with new numerical
-examples and explain the equations, truth isolation, denominators and one
-observed failure. Record actual unresolved gaps. Assistant-prepared suggestions
-stay in ignored private_notes/ and are not the author's answers.
+Before a later authorized release, the author must explain the equations, truth
+isolation, denominators and one observed failure. Study remains deferred/unassessed.
+Private assistant-prepared suggestions are not the author's answers.
 
-Changes follow AGENTS.md and SECURITY.md: one writer, focused commits, preserved
-failures, independent gates and explicit authorization for push/deployment/outreach.
+Development uses one writer, preserved failures and independent gates. The public
+snapshot omits internal operational instructions; its provenance and limitations
+are explained in docs/public/REPRODUCIBILITY.md. No push/deployment/outreach is implied.

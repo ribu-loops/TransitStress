@@ -1,0 +1,44 @@
+{
+  "label": "Public documentation derivatives, not original evidence",
+  "source_commit": "bd29f9aa05c89af53c79f7480c6646190f2dccf8",
+  "records": [
+    {
+      "original": "demo/t10/T07.md",
+      "original_sha256": "115d2c84a624d2e8333b2d0fe13be25e5153fa24c44dc02dc5d96505dfec4c3d",
+      "derivative": "docs/public/demo/T07.md",
+      "derivative_sha256": "3877be3a7ebcf235059bbc8cab6e6d4b9adacdc09d4fcedef9baba5ba7b07609",
+      "transformation": "Add derivative banner; replace only original line 317 workstation location with <project-root>. All findings retained."
+    },
+    {
+      "original": "demo/t10/bundle.json",
+      "original_sha256": "8e5cc747101bcb128093e8a13a9b20ca961d4327b4662bb0d160d9387b68f4a4",
+      "derivative": "docs/public/demo/bundle.json",
+      "derivative_sha256": "3f2ff88c9167e959f4d921705295a6bd5111971cd99262dd70e154332c1763ad",
+      "transformation": "Update only T07.md transport record and add explicit derivative provenance. Frozen identity and every other member record unchanged."
+    },
+    {
+      "original": "docs/METHODS_RESULTS.md",
+      "original_sha256": "576dc99c6f637008c145e593859ddfb8b4d10ca3eb0a8dd80e4162e4758fd29c",
+      "derivative": "docs/public/METHODS.md",
+      "transformation": "Labelled concise summary; does not replace original evidence or claim its checksum."
+    },
+    {
+      "original": "docs/T11_CLOSEOUT.md",
+      "original_sha256": "6fab1a795258a515f5ae9ea311d1528582441afe721f09c9fef7391c1398c7b8",
+      "derivative": "docs/public/REPRODUCIBILITY.md",
+      "transformation": "Labelled concise summary; does not replace original evidence or claim its checksum."
+    },
+    {
+      "original": "docs/T12_DEPENDENCY_REPAIR.md",
+      "original_sha256": "6c57cf26a262bdfe2d7570002b23a9096b2fd45738365e8173ef0d62021e2946",
+      "derivative": "docs/public/REPRODUCIBILITY.md",
+      "transformation": "Labelled concise summary; does not replace original evidence or claim its checksum."
+    },
+    {
+      "original": "docs/reviews/T12_DEP_R1_EVIDENCE_REVIEW.md",
+      "original_sha256": "c9d74a636c35b5d26d571de4cf04a9937aa1b9e10683d3c47ba211c2b7d3a173",
+      "derivative": "docs/public/REPRODUCIBILITY.md",
+      "transformation": "Labelled concise summary; does not replace original evidence or claim its checksum."
+    }
+  ]
+}

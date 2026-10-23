@@ -60,6 +60,20 @@ def test_complete_offline_bundle_matches_original_sources(monkeypatch):
     assert set(references) == set(direct_sources)
     for name, record in direct_sources.items():
         expected = references[name]
+        if name == "T07.md" and record["source"] == "docs/public/demo/T07.md":
+            # Independently captured public documentation copy; original evidence
+            # pin remains intact. No numerical payload gets this exception.
+            assert expected["sha256"] == (
+                "115d2c84a624d2e8333b2d0fe13be25e5153fa24c44dc02dc5d96505dfec4c3d"
+            )
+            expected = {
+                "source": "docs/public/demo/T07.md",
+                "bytes": 23268,
+                "sha256": "3877be3a7ebcf235059bbc8cab6e6d4b9adacdc09d4fcedef9baba5ba7b07609",
+            }
+            assert bundle.content[name].startswith(
+                b"# Public documentation derivative of the independent T07 review"
+            )
         assert record["source"] == expected["source"]
         assert record["sha256"] == expected["sha256"]
         assert len(bundle.content[name]) == expected["bytes"]

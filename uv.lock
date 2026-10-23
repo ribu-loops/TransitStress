@@ -1618,9 +1618,11 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "astropy" },
+    { name = "certifi" },
     { name = "lightkurve" },
     { name = "numpy" },
     { name = "pandas" },
+    { name = "pillow" },
     { name = "plotly" },
     { name = "streamlit" },
 ]
@@ -1636,11 +1638,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "astropy" },
+    { name = "certifi", specifier = ">=2026.10.19" },
     { name = "lightkurve" },
     { name = "numpy" },
     { name = "pandas" },
+    { name = "pillow", specifier = ">=13.0.0,<14" },
     { name = "plotly" },
-    { name = "streamlit" },
+    { name = "streamlit", specifier = ">=1.66.1,<1.67" },
 ]
 
 [package.metadata.requires-dev]

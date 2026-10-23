@@ -11,7 +11,12 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12,<3.13"
-dependencies = ["numpy", "pandas", "astropy", "lightkurve", "plotly", "streamlit"]
+# Security floors are ordinary Requires-Dist entries, including transitive protections.
+# Keep the reviewed Streamlit/Pillow compatibility line; other direct requirements unchanged.
+dependencies = [
+  "numpy", "pandas", "astropy", "lightkurve", "plotly",
+  "streamlit>=1.66.1,<1.67", "pillow>=13.0.0,<14", "certifi>=2026.10.19",
+]
 
 [project.scripts]
 transitstress = "transitstress.cli:main"
@@ -37,22 +42,12 @@ include = [
   "/src/**/*.py", "/app.py", "/.streamlit/config.toml",
   "/configs/*.toml", "/configs/*.json", "/data/*.json", "/data/*.csv",
   "/demo/**", "/tests/**/*.py", "/tests/fixtures/**",
-  "/docs/ATTRIBUTION.md", "/docs/METHODS_RESULTS.md", "/docs/SCIENCE.md",
-  "/docs/SOURCES.md", "/docs/SECURITY_SOURCES.md", "/docs/ENGINEERING.md",
-  "/docs/ENVIRONMENT.md", "/docs/RUNNING.md", "/docs/DISTRIBUTION.md",
-  "/docs/DEMO_WALKTHROUGH.md", "/docs/T09_WORKBENCH.md", "/docs/T10_DEMO.md",
-  "/docs/UI_REVISION*.md", "/docs/visual/UI_REVISION/**",
-  "/docs/T11_CI.md", "/docs/T11_CLOSEOUT.md", "/docs/PROTOCOL*.md", "/docs/PROTOCOL*.json",
-  "/docs/T11_REPRODUCTION*_OUTCOME.md", "/docs/corrections/**", "/docs/reviews/**",
-  "/docs/review_pack/**", "/docs/visual/T10/**",
-  "/reports/t07_evaluation/**", "/reports/T07_PRELIMINARY.md",
-  "/reports/t07_evaluation_evidence.json", "/reports/t04_sanity/**",
-  "/reports/t06_development/**", "/reports/t06_development_evidence.json",
-  "/reports/T11_REPRODUCTION_V5_ATTEMPT.json",
-  "/scripts/*.py", "/scripts/*.json", "/devtools/*.py", "/examples/*",
+  "/docs/public/**", "/docs/ATTRIBUTION.md", "/docs/SOURCES.md", "/docs/SECURITY_SOURCES.md",
+  "/reports/t04_sanity/**",
+  "/scripts/*.py", "/scripts/*.json", "/devtools/install_gitleaks.py", "/examples/*",
   "/.github/workflows/offline.yml", "/README.md", "/CONTRIBUTIONS.md",
-  "/AGENTS.md", "/SECURITY.md", "/DESIGN.md", "/PLAN.md", "/LICENSE", "/NOTICE",
-  "/.python-version", "/.gitignore", "/.gitattributes", "/pyproject.toml", "/uv.lock",
+  "/SECURITY.md", "/LICENSE", "/NOTICE", "/.python-version", "/.gitignore",
+  "/.gitattributes", "/pyproject.toml", "/uv.lock",
 ]
 exclude = [
   "**/__pycache__/**", "**/*.pyc", "/.cache/**", "/.tools/**", "/.venv/**",
@@ -62,6 +57,11 @@ exclude = [
   "/docs/LEARNING.md", "/docs/T07_SESSION_PROMPT.md",
   "**/.git/**", "**/.vscode/**", "**/.idea/**", "**/*.pem", "**/*.key",
 ]
+
+# Labelled public review derivative and its transport manifest; originals stay in Git.
+[tool.hatch.build.targets.sdist.force-include]
+"docs/public/demo/T07.md" = "demo/t10/T07.md"
+"docs/public/demo/bundle.json" = "demo/t10/bundle.json"
 
 # T12 minimum advisory remediation; retain the resolved numerical stack.
 [tool.uv]

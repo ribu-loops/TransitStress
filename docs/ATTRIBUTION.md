@@ -60,7 +60,7 @@ are derived data, retain this attribution and do not become original MIT code.
 | Astropy | 8.0.2 | BSD-3-Clause and bundled component notices |
 | Lightkurve | 2.6.0 | MIT |
 | Plotly.py | 7.1.0 | MIT; includes Plotly.js 4.1.1 |
-| Streamlit | 1.66.0 | Apache-2.0 and distribution component notices |
+| Streamlit | 1.66.1 | Apache-2.0 and distribution component notices |
 
 Versions and license expressions/classifiers were inspected in the installed
 locked distributions. This is a direct-package inventory, not a claim that all
@@ -87,3 +87,7 @@ The Python wheel is the scientific CLI/library. The source app, curated arrays
 and reports are distributed through the source checkout, with these notices.
 See [CONTRIBUTIONS](../CONTRIBUTIONS.md) for the material AI-assistance disclosure
 and the distinction between automated/model review and human validation.
+
+The current packaging also directly enforces certifi >=2026.10.19 (MPL-2.0) and
+Pillow >=13,<14 (HPND and bundled-component notices); the lock retains the reviewed
+2026.10.19 and 13.0.0 versions. They are installed separately, not vendored.
