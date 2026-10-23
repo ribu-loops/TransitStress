@@ -50,6 +50,7 @@ include = [
   "/.gitattributes", "/pyproject.toml", "/uv.lock",
 ]
 exclude = [
+  "/demo/t10/T07.md", "/demo/t10/bundle.json",
   "**/__pycache__/**", "**/*.pyc", "/.cache/**", "/.tools/**", "/.venv/**",
   "/runs/**", "/private_notes/**", "/data/raw/**", "/local_uploads/**",
   "/.env*", "/.streamlit/secrets.toml", "/security_reports/**",
