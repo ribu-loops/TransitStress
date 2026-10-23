@@ -83,6 +83,63 @@ def test_primary_route_guide_return_and_pair_binding():
     assert not at.exception and "job" not in at.session_state
 
 
+def test_hidden_layout_roundtrip_preserves_current_case_and_private_session():
+    """Saved arrays only: exercise native cleanup of the conditional layout widget."""
+    bundle = load_bundle()
+    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=40).run()
+    button(at, "Explore a worked example").click().run()
+    cid = at.selectbox(key="curated_case_widget").value
+    other_cid = next(case for case in bundle.arrays if case != cid)
+    bounds = tuple(next(r for r in bundle.rows if r["case_id"] == cid)["original_bounds_days"])
+    at.radio(key="reading_choice").set_value(browser.STEPS[2]).run()
+    at.slider(key="public_time_range").set_value((3.0, 4.0)).run()
+    at.radio(key="public_layout").set_value("Overlay").run()
+    at.radio(key="public_view").set_value("Fitted trends").run()
+    assert not any(r.key == "public_layout" for r in at.radio)
+    at.radio(key="public_view").set_value("Processed flux").run()
+    assert at.radio(key="public_layout").value == "Overlay"
+    assert at.slider(key="public_time_range").value == (3.0, 4.0)
+    assert at.session_state["saved_display"][cid]["public_layout"] == "Overlay"
+
+    # A current explicit selection must replace the saved Overlay, even after expiry.
+    at.radio(key="public_layout").set_value("Stacked A/B").run()
+    at.radio(key="public_view").set_value("Fitted trends").run()
+    button(at, "Reset to full baseline").click().run()
+    at.radio(key="public_view").set_value("Processed flux").run()
+    assert at.radio(key="public_layout").value == "Stacked A/B"
+    assert at.slider(key="public_time_range").value == bounds
+    at.slider(key="public_time_range").set_value((3.0, 4.0)).run()
+
+    # Different cases keep their own layout and zoom; navigation must not run science.
+    at.selectbox(key="curated_case_widget").set_value(other_cid).run()
+    at.radio(key="reading_choice").set_value(browser.STEPS[2]).run()
+    assert at.radio(key="public_layout").value == "Stacked A/B"
+    other_bounds = tuple(
+        next(r for r in bundle.rows if r["case_id"] == other_cid)["original_bounds_days"]
+    )
+    assert at.slider(key="public_time_range").value == other_bounds
+    at.radio(key="public_layout").set_value("Overlay").run()
+    at.selectbox(key="curated_case_widget").set_value(cid).run()
+    at.radio(key="reading_choice").set_value(browser.STEPS[2]).run()
+    assert at.radio(key="public_layout").value == "Stacked A/B"
+    assert at.slider(key="public_time_range").value == (3.0, 4.0)
+    at.sidebar.radio[0].set_value("Methods").run()
+    at.sidebar.radio[0].set_value("Workbench").run()
+    assert at.radio(key="reading_choice").value == browser.STEPS[2]
+    assert at.radio(key="public_layout").value == "Stacked A/B"
+    assert at.slider(key="public_time_range").value == (3.0, 4.0)
+    assert at.session_state["saved_display"][other_cid]["public_layout"] == "Overlay"
+    assert not at.exception and "job" not in at.session_state
+
+    private = AppTest.from_file(str(ROOT / "app.py"), default_timeout=40).run()
+    button(private, "Explore a worked example").click().run()
+    private.radio(key="reading_choice").set_value(browser.STEPS[2]).run()
+    assert private.radio(key="public_layout").value == "Stacked A/B"
+    assert private.slider(key="public_time_range").value == bounds
+    assert cid not in private.session_state["saved_display"]
+    assert not private.exception and "job" not in private.session_state
+
+
 def test_filters_survive_destination_return_without_changing_denominator():
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=40).run()
     button(at, "Browse benchmark").click().run()

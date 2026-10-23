@@ -231,11 +231,15 @@ def remember_case() -> None:
 
 
 def remember_display(cid: str) -> None:
-    st.session_state.setdefault("saved_display", {})[cid] = {
-        key: st.session_state[key]
-        for key in ("public_time_range", "public_view", "public_layout")
-        if key in st.session_state
-    }
+    # Conditional widgets expire; retain their last per-case preference while hidden.
+    saved = st.session_state.setdefault("saved_display", {}).setdefault(cid, {})
+    saved.update(
+        {
+            key: st.session_state[key]
+            for key in ("public_time_range", "public_view", "public_layout")
+            if key in st.session_state
+        }
+    )
 
 
 def saved_chart_controls(cid: str, arrays: dict, bounds: list) -> None:
