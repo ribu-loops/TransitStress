@@ -41,6 +41,7 @@ include = [
   "/docs/SOURCES.md", "/docs/SECURITY_SOURCES.md", "/docs/ENGINEERING.md",
   "/docs/ENVIRONMENT.md", "/docs/RUNNING.md", "/docs/DISTRIBUTION.md",
   "/docs/DEMO_WALKTHROUGH.md", "/docs/T09_WORKBENCH.md", "/docs/T10_DEMO.md",
+  "/docs/UI_REVISION*.md", "/docs/visual/UI_REVISION/**",
   "/docs/T11_CI.md", "/docs/T11_CLOSEOUT.md", "/docs/PROTOCOL*.md", "/docs/PROTOCOL*.json",
   "/docs/T11_REPRODUCTION*_OUTCOME.md", "/docs/corrections/**", "/docs/reviews/**",
   "/docs/review_pack/**", "/docs/visual/T10/**",
