@@ -61,8 +61,9 @@ exclude = [
 
 # Labelled public review derivative and its transport manifest; originals stay in Git.
 [tool.hatch.build.targets.sdist.force-include]
-"docs/public/demo/T07.md" = "demo/t10/T07.md"
-"docs/public/demo/bundle.json" = "demo/t10/bundle.json"
+"docs/public/demo" = "demo/t10"
+"docs/public/demo/T07.md" = "docs/public/demo/T07.md"
+"docs/public/demo/bundle.json" = "docs/public/demo/bundle.json"
 
 # T12 minimum advisory remediation; retain the resolved numerical stack.
 [tool.uv]
