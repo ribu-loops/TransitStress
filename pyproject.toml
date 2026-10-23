@@ -61,3 +61,7 @@ exclude = [
   "/docs/LEARNING.md", "/docs/T07_SESSION_PROMPT.md",
   "**/.git/**", "**/.vscode/**", "**/.idea/**", "**/*.pem", "**/*.key",
 ]
+
+# T12 minimum advisory remediation; retain the resolved numerical stack.
+[tool.uv]
+constraint-dependencies = ["certifi>=2026.10.19", "pillow>=13.0.0"]
