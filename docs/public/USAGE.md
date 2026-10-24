@@ -28,8 +28,17 @@ earlier reference assets. Do not mix members from different candidates. Corrupt
 or missing assets must be restored from the same archive; startup does not fetch
 or recompute them.
 
-The wheel installs the CLI/library: `python -m pip install transitstress-0.1.0-py3-none-any.whl`,
-then `transitstress --help`. It does not contain source-root dashboard assets.
+The wheel installs the CLI/library in a separate environment. On verified Linux/WSL:
+
+```sh
+uv venv --python 3.12.15 .venv-cli
+uv pip install --python .venv-cli/bin/python transitstress-0.1.0-py3-none-any.whl
+.venv-cli/bin/transitstress --help
+```
+
+Use repaired uv for package network operations. The unchanged project lock still
+contains pip 26.2.1 with an older vendored CA bundle; that pip is not network-cleared.
+The wheel does not contain source-root dashboard assets.
 Ordinary pip resolution enforces the wheel floors; exact tested versions are
 recorded in the source lock, not guaranteed by an unconstrained future resolver.
 

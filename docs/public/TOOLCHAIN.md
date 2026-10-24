@@ -15,7 +15,12 @@ Python remains 3.12.15. New managed setups should use the official
 selected by uv 0.13.5, with pip/ensurepip 26.2.2 and its repaired certifi 2026.10.19.
 Existing environments do not automatically adopt that build. Preserve historical
 environments; do not run their older bundled pip/ensurepip over the network as a
-bootstrap workaround. The local candidate verifies a separate same-patch build,
+bootstrap workaround. The unchanged project lock installs pip 26.2.1, whose
+vendored certifi 2026.06.17 still contains the affected root even in a new project
+venv. Its network trust remains uncleared: use repaired uv for installation,
+never that pip for network access. This is a separate tool limitation; Python
+DEP-R1 remains closed for its independently reviewed distribution scope.
+The local candidate verifies a separate same-patch build,
 not a project Python or dependency upgrade. Official TLS release digests/checksums
 are verified; independent Sigstore attestation verification is not claimed.
 
