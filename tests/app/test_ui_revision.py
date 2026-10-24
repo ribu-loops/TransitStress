@@ -221,7 +221,25 @@ def test_screen_adapter_preserves_arrays_axes_gaps_and_historical_style():
         prepared, injected = screen.data
         assert prepared.marker.symbol == "circle-open" and prepared.marker.color == TEXT
         assert injected.marker.symbol == "circle" and injected.marker.color == YELLOW
-        assert prepared.marker.size > injected.marker.size
+        assert 0 < injected.marker.size < prepared.marker.size <= 4
+        assert 0 < prepared.marker.opacity <= 0.5
+        assert 0 < injected.marker.opacity <= 0.5
+        assert 0 < prepared.marker.line.width < 1
+        for limits in (row["original_bounds_days"], [3.0, 4.0]):
+            original_single = timeline(arrays, "Prepared & injected", row["original_bounds_days"])
+            original_single.data = (original_single.data[0],)
+            original_single.update_xaxes(range=limits)
+            before = original_single.to_json()
+            single = dark_figure(original_single)
+            dot = single.data[0]
+            assert dot.marker.symbol == "circle" and dot.marker.color == TEXT
+            assert 0 < dot.marker.size <= 3 and 0 < dot.marker.opacity <= 0.5
+            assert dot.marker.line.width == 0
+            np.testing.assert_array_equal(dot.x, arrays["time_days"])
+            np.testing.assert_array_equal(dot.y, arrays["background_flux"])
+            assert single.layout.xaxis.range == tuple(limits)
+            assert single.layout.yaxis.range == original_single.layout.yaxis.range
+            assert original_single.to_json() == before
         assert prepared.zorder > injected.zorder
         assert prepared.legendrank < injected.legendrank
         assert [t.name for t in screen.data] == ["Prepared observations", "Artificial injection"]

@@ -22,6 +22,7 @@ def dark_figure(figure: go.Figure) -> go.Figure:
     )
     fig.update_xaxes(gridcolor="#344155", zerolinecolor="#344155", automargin=True)
     fig.update_yaxes(gridcolor="#344155", zerolinecolor="#344155", automargin=True)
+    paired_input = any(t.name == "With synthetic injection" for t in fig.data)
     for trace in fig.data:
         name = trace.name or ""
         is_b = name.startswith("B ")
@@ -31,17 +32,18 @@ def dark_figure(figure: go.Figure) -> go.Figure:
             trace.marker.color = color
             trace.marker.opacity = 0.72
             if "Prepared background" in name:
-                trace.marker.symbol = "circle-open"
-                trace.marker.size = 6
-                trace.marker.opacity = 0.9
-                trace.marker.line.width = 1.2
+                trace.marker.symbol = "circle-open" if paired_input else "circle"
+                trace.marker.size = 4 if paired_input else 2.5
+                trace.marker.opacity = 0.5 if paired_input else 0.45
+                trace.marker.line.width = 0.6 if paired_input else 0
                 trace.zorder = 2
                 trace.legendrank = 1
                 trace.name = "Prepared observations"
             elif name == "With synthetic injection":
                 trace.marker.symbol = "circle"
-                trace.marker.size = 3
-                trace.marker.opacity = 0.85
+                trace.marker.size = 2
+                trace.marker.opacity = 0.5
+                trace.marker.line.width = 0
                 trace.zorder = 1
                 trace.legendrank = 2
                 trace.name = "Artificial injection"

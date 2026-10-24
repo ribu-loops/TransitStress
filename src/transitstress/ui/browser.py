@@ -382,7 +382,7 @@ def detail(bundle: DemoBundle, cid: str) -> None:
             )
             st.write(
                 "**Normalized flux** is brightness divided by a reference level: 1 is that "
-                "level; 0.999 is 0.1% fainter. Each white open circle is a retained 10-minute "
+                "level; 0.999 is 0.1% fainter. Each soft off-white dot is a retained 10-minute "
                 "measurement. Time is in days from the recorded starting epoch."
             )
             figure = timeline(arrays, "Prepared & injected", bounds)
