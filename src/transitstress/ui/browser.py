@@ -1,5 +1,7 @@
 """Four native destinations consuming validated, precomputed public evidence."""
 
+from pathlib import Path
+
 import streamlit as st
 
 from transitstress.artifacts import results_csv
@@ -21,6 +23,20 @@ LIMITATIONS = (
     "recovery and retention are diagnostics, not planet confirmation, calibrated "
     "probabilities, survey completeness or population superiority."
 )
+
+
+OVERLAP_EXPLANATION = (
+    "Most points overlap because they are unchanged outside the artificial "
+    "transits. The large background variations are not the inserted signal. "
+    "Zoom in to inspect the small differences."
+)
+
+
+def setup_guide() -> None:
+    """Open the packaged setup documentation without a hosted-link assumption."""
+    with st.popover("Setup guide"):
+        guide = Path(__file__).resolve().parents[3] / "docs/public/USAGE.md"
+        st.markdown(guide.read_text(encoding="utf-8"))
 
 
 def navigate(destination: str, content: str | None = None) -> None:
@@ -314,8 +330,9 @@ def saved_chart_controls(cid: str, arrays: dict, bounds: list) -> None:
         st.write(
             "White open circles show the prepared telescope background; yellow dots show "
             "the same timestamps after artificial dimming. Axes show days and normalized "
-            "flux (relative brightness). The injected difference may be subtle at this scale."
+            "flux (relative brightness)."
         )
+        st.write(OVERLAP_EXPLANATION)
     else:
         st.write(
             "Yellow dots show injected input. White solid A and yellow dashed B lines show "
@@ -403,6 +420,7 @@ def detail(bundle: DemoBundle, cid: str) -> None:
                 "dimensionless normalized flux. Notice the shared gaps: adding a signal "
                 "does not create missing observations."
             )
+            st.write(OVERLAP_EXPLANATION)
             show_chart(
                 timeline(arrays, "Prepared & injected", bounds),
                 width="stretch",
@@ -529,11 +547,16 @@ def _reset_public(bounds: tuple[float, float], cid: str) -> None:
 
 def curated_workbench(bundle: DemoBundle, mode: str = "demo") -> None:
     st.title("Worked example")
-    st.info(
-        "Demo mode denies uploads and new computation. Saved evidence only."
-        if mode == "demo"
-        else "Saved evidence only. Advanced local experiments are separate in the sidebar."
-    )
+    if mode == "demo":
+        st.subheader("Interactive demo")
+        st.write(
+            "Explore saved results from experiments using real TESS observations "
+            "and artificial transit signals. To analyse your own compatible "
+            "light-curve CSV, run TransitStress locally—see the setup guide."
+        )
+        setup_guide()
+    else:
+        st.info("Saved evidence only. Advanced local experiments are separate in the sidebar.")
     examples = bundle.manifest["curated"]
     default = next(c["case_id"] for c in examples if c["stem"] == "example3")
     if "curated_case_widget" not in st.session_state:
@@ -866,8 +889,8 @@ def methods(bundle: DemoBundle) -> None:
     st.caption(
         "The demo is self-contained. The last command requires the original run restored "
         "locally. Scoped assistant-performed V5 reproduction is recorded separately; "
-        "native Windows proof remains unavailable. Dependency findings remain unresolved, "
-        "with remediation/independent review pending. Privacy holds remain. No release "
+        "native Windows proof remains unavailable. Python DEP-R1 is CLOSED. "
+        "Release-tool changed-surface review, publication and G4 holds remain. No release "
         "or deployment is approved. Browsing time measures navigation, not scientific computation."
     )
 
@@ -892,7 +915,7 @@ def main() -> None:
     st.sidebar.caption("Data: complete packaged bundle validated · offline · precomputed")
     st.sidebar.caption(
         "Presentation revision: visual feedback and independent review pending. "
-        "Dependency findings unresolved; release/privacy holds remain. G4 pending."
+        "Python DEP-R1 is CLOSED. Tool review, publication and G4 holds remain."
     )
 
     if destination == "Start":
@@ -911,3 +934,6 @@ def main() -> None:
             curated_workbench(bundle, mode)
     else:
         curated_workbench(bundle)
+
+    st.divider()
+    st.caption("Built by ribu-loops")

@@ -59,6 +59,9 @@ def test_primary_route_guide_return_and_pair_binding():
     assert not at.exception
     assert at.selectbox(key="curated_case_widget").value == cid
     assert at.radio(key="reading_choice").value == browser.STEPS[0]
+    assert at.get("popover")[0].proto.popover.label == "Setup guide"
+    assert any("Git checkout with a real current commit" in m.value for m in at.markdown)
+    assert any("time_days,flux,flux_err" in m.value for m in at.markdown)
     at.radio(key="reading_choice").set_value(browser.STEPS[2]).run()
     assert not at.exception
     at.slider(key="public_time_range").set_value((3.0, 4.0)).run()
@@ -212,6 +215,26 @@ def test_screen_adapter_preserves_arrays_axes_gaps_and_historical_style():
         assert screen.layout.xaxis.range == original.layout.xaxis.range
         assert screen.layout.yaxis.range == original.layout.yaxis.range
     assert dark_figure(original).data[-1].line.color == YELLOW
+    for cid, arrays in bundle.arrays.items():
+        row = next(r for r in bundle.rows if r["case_id"] == cid)
+        screen = dark_figure(timeline(arrays, "Prepared & injected", row["original_bounds_days"]))
+        prepared, injected = screen.data
+        assert prepared.marker.symbol == "circle-open" and prepared.marker.color == TEXT
+        assert injected.marker.symbol == "circle" and injected.marker.color == YELLOW
+        assert prepared.marker.size > injected.marker.size
+        assert prepared.zorder > injected.zorder
+        assert prepared.legendrank < injected.legendrank
+        assert [t.name for t in screen.data] == ["Prepared observations", "Artificial injection"]
+        assert all(
+            "days" in t.hovertemplate and "Normalized flux" in t.hovertemplate for t in screen.data
+        )
+        # Independently inspect saved series: the caption describes the actual points,
+        # without deriving a mask for the detector or recomputing any science.
+        delta = arrays["background_flux"] - arrays["input_flux"]
+        changed = delta != 0
+        assert np.count_nonzero(changed) == row["total_in_transit_points"]
+        assert np.count_nonzero(~changed) > len(delta) / 2
+        np.testing.assert_allclose(delta[changed], row["true_depth"], rtol=0, atol=2e-16)
 
 
 def test_local_completed_state_stale_failure_and_export_lock_with_saved_rows(monkeypatch):

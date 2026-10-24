@@ -100,5 +100,6 @@ def test_demo_ignores_session_and_query_mode_and_has_no_private_job():
     at.query_params["path"] = "runs/private"
     at.sidebar.radio[0].set_value("Workbench").run()
     assert not at.exception and not at.get("file_uploader")
-    assert any("Demo mode denies" in m.value for m in at.info)
+    assert any(m.value == "Interactive demo" for m in at.subheader)
+    assert not any(b.label == "Run comparison" for b in at.button)
     assert "job" not in at.session_state

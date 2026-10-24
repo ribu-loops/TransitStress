@@ -31,8 +31,10 @@ historical evaluation, corrected source and the scoped one-case self-reproductio
 
 ## Install and launch
 
-Use Python **3.12** (tested 3.12.15) and uv (tested 0.13.1). Extract the source
-distribution and open a terminal in its root. No API key, GPU or runtime AI is needed.
+Use Python **3.12** (tested 3.12.15) and uv **0.13.5** (verified official release). Extract the source
+distribution and open a terminal in its root. See the [toolchain setup](docs/public/TOOLCHAIN.md)
+for verified bootstrap and the same-version managed Python build. No API key,
+GPU or runtime AI is needed.
 
 ```sh
 uv sync --locked --python 3.12.15

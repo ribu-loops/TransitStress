@@ -1,8 +1,23 @@
 # Public usage guide
 
 This concise public derivative replaces operational setup instructions in the
-distribution. It is not a historical test record. Start with the root README's
-locked Python 3.12 setup and loopback launch. The native dark/gold theme, CORS,
+distribution. It is not a historical test record.
+
+Use verified official uv **0.13.5** and Python **3.12.15**. For new managed
+installations, use the trust-fixed python-build-standalone **20261021** build.
+Extract the source archive and open a terminal at its root, then:
+
+```sh
+uv sync --locked --python 3.12.15
+uv run --locked --offline --no-sync python -m transitstress doctor
+TRANSITSTRESS_MODE=demo uv run --locked --offline --no-sync streamlit run app.py --server.address 127.0.0.1 --server.headless true
+```
+
+Initial setup requires network or existing compatible caches. Later saved-demo
+browsing is offline. The setup uses the existing lock, with no package upgrades.
+The terminal prints the loopback URL; stop with Ctrl+C.
+
+The native dark/gold theme, CORS,
 XSRF, 5 MB uploader setting, disabled usage telemetry and hidden public traceback
 details are shipped in .streamlit/config.toml.
 

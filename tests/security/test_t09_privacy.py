@@ -66,8 +66,8 @@ def test_query_and_session_mode_cannot_enable_local(monkeypatch):
     at.sidebar.radio[0].set_value("Workbench").run()
     assert not at.exception and not at.get("file_uploader")
     assert not any(b.label == "Run comparison" for b in at.button)
-    assert any("Demo mode denies" in message.value for message in at.info)
-    assert "Demo mode denies" in at.info[0].value
+    assert any(message.value == "Interactive demo" for message in at.subheader)
+    assert "job" not in at.session_state
 
 
 @pytest.mark.parametrize(
