@@ -54,7 +54,8 @@ def dark_figure(figure: go.Figure) -> go.Figure:
                 trace.legendrank = 2
                 trace.name = "Artificially injected observations"
             trace.hovertemplate = (
-                "Time: %{x:.5f} days<br>Normalized flux: %{y:.7f}<extra>%{fullData.name}</extra>"
+                "%{fullData.name}<br>Time: %{x:.5f} days<br>"
+                "Normalized flux: %{y:.7f}<extra></extra>"
             )
         else:
             trace.line.color = color

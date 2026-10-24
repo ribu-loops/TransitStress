@@ -256,7 +256,11 @@ def test_screen_adapter_preserves_arrays_axes_gaps_and_historical_style():
             "Artificially injected observations",
         ]
         assert all(
-            "days" in t.hovertemplate and "Normalized flux" in t.hovertemplate for t in screen.data
+            t.hovertemplate.startswith("%{fullData.name}<br>Time:")
+            and "days" in t.hovertemplate
+            and "Normalized flux" in t.hovertemplate
+            and t.hovertemplate.endswith("<extra></extra>")
+            for t in screen.data
         )
         # Independently inspect saved series: the caption describes the actual points,
         # without deriving a mask for the detector or recomputing any science.
