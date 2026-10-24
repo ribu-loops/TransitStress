@@ -6,7 +6,8 @@ import streamlit as st
 BACKGROUND = "#111827"
 SURFACE = "#1B2638"
 TEXT = "#F1F5F9"
-YELLOW = "#F4CE68"
+YELLOW = "#FACC15"
+CYAN = "#22D3EE"
 
 
 def dark_figure(figure: go.Figure) -> go.Figure:
@@ -22,7 +23,10 @@ def dark_figure(figure: go.Figure) -> go.Figure:
     )
     fig.update_xaxes(gridcolor="#344155", zerolinecolor="#344155", automargin=True)
     fig.update_yaxes(gridcolor="#344155", zerolinecolor="#344155", automargin=True)
-    paired_input = any(t.name == "With synthetic injection" for t in fig.data)
+    paired_input = any(
+        t.name in {"With synthetic injection", "Artificially injected observations"}
+        for t in fig.data
+    )
     for trace in fig.data:
         name = trace.name or ""
         is_b = name.startswith("B ")
@@ -32,21 +36,23 @@ def dark_figure(figure: go.Figure) -> go.Figure:
             trace.marker.color = color
             trace.marker.opacity = 0.72
             if "Prepared background" in name:
-                trace.marker.symbol = "circle-open" if paired_input else "circle"
-                trace.marker.size = 4 if paired_input else 2.5
-                trace.marker.opacity = 0.5 if paired_input else 0.45
-                trace.marker.line.width = 0.6 if paired_input else 0
-                trace.zorder = 2
-                trace.legendrank = 1
-                trace.name = "Prepared observations"
-            elif name == "With synthetic injection":
+                trace.marker.color = CYAN if paired_input else YELLOW
                 trace.marker.symbol = "circle"
-                trace.marker.size = 2
-                trace.marker.opacity = 0.5
+                trace.marker.size = 2.5
+                trace.marker.opacity = 1
                 trace.marker.line.width = 0
                 trace.zorder = 1
+                trace.legendrank = 1
+                trace.name = "Prepared background"
+            elif is_injected:
+                trace.marker.color = YELLOW
+                trace.marker.symbol = "circle"
+                trace.marker.size = 2.5
+                trace.marker.opacity = 1
+                trace.marker.line.width = 0
+                trace.zorder = 2
                 trace.legendrank = 2
-                trace.name = "Artificial injection"
+                trace.name = "Artificially injected observations"
             trace.hovertemplate = (
                 "Time: %{x:.5f} days<br>Normalized flux: %{y:.7f}<extra>%{fullData.name}</extra>"
             )

@@ -14,8 +14,8 @@ from streamlit.testing.v1 import AppTest
 
 from transitstress.ui import browser, controller, local
 from transitstress.ui.bundle import case_zip, load_bundle
-from transitstress.ui.charts import timeline
-from transitstress.ui.presentation import BACKGROUND, TEXT, YELLOW, dark_figure
+from transitstress.ui.charts import baseline_context, timeline
+from transitstress.ui.presentation import BACKGROUND, CYAN, TEXT, YELLOW, dark_figure
 
 ROOT = Path(__file__).resolve().parents[2]
 LOOPS = [asyncio.new_event_loop() for _ in range(100)]
@@ -219,12 +219,21 @@ def test_screen_adapter_preserves_arrays_axes_gaps_and_historical_style():
         row = next(r for r in bundle.rows if r["case_id"] == cid)
         screen = dark_figure(timeline(arrays, "Prepared & injected", row["original_bounds_days"]))
         prepared, injected = screen.data
-        assert prepared.marker.symbol == "circle-open" and prepared.marker.color == TEXT
+        assert prepared.marker.symbol == "circle" and prepared.marker.color == CYAN
         assert injected.marker.symbol == "circle" and injected.marker.color == YELLOW
-        assert 0 < injected.marker.size < prepared.marker.size <= 4
-        assert 0 < prepared.marker.opacity <= 0.5
-        assert 0 < injected.marker.opacity <= 0.5
-        assert 0 < prepared.marker.line.width < 1
+        assert CYAN == "#22D3EE" and YELLOW == "#FACC15"
+        assert 0 < injected.marker.size == prepared.marker.size <= 3
+        assert prepared.marker.opacity == injected.marker.opacity == 1
+        assert prepared.marker.line.width == injected.marker.line.width == 0
+        for other in (
+            baseline_context(arrays, row["original_bounds_days"], (3.0, 4.0)),
+            timeline(arrays, "Fitted trends", row["original_bounds_days"]),
+        ):
+            other_input = dark_figure(other).data[0]
+            assert other_input.marker.color == YELLOW
+            assert other_input.marker.symbol == "circle"
+            assert other_input.marker.opacity == 1 and other_input.marker.line.width == 0
+            np.testing.assert_array_equal(other_input.y, arrays["input_flux"])
         for limits in (row["original_bounds_days"], [3.0, 4.0]):
             original_single = timeline(arrays, "Prepared & injected", row["original_bounds_days"])
             original_single.data = (original_single.data[0],)
@@ -232,17 +241,20 @@ def test_screen_adapter_preserves_arrays_axes_gaps_and_historical_style():
             before = original_single.to_json()
             single = dark_figure(original_single)
             dot = single.data[0]
-            assert dot.marker.symbol == "circle" and dot.marker.color == TEXT
-            assert 0 < dot.marker.size <= 3 and 0 < dot.marker.opacity <= 0.5
+            assert dot.marker.symbol == "circle" and dot.marker.color == YELLOW
+            assert 0 < dot.marker.size <= 3 and dot.marker.opacity == 1
             assert dot.marker.line.width == 0
             np.testing.assert_array_equal(dot.x, arrays["time_days"])
             np.testing.assert_array_equal(dot.y, arrays["background_flux"])
             assert single.layout.xaxis.range == tuple(limits)
             assert single.layout.yaxis.range == original_single.layout.yaxis.range
             assert original_single.to_json() == before
-        assert prepared.zorder > injected.zorder
+        assert injected.zorder > prepared.zorder
         assert prepared.legendrank < injected.legendrank
-        assert [t.name for t in screen.data] == ["Prepared observations", "Artificial injection"]
+        assert [t.name for t in screen.data] == [
+            "Prepared background",
+            "Artificially injected observations",
+        ]
         assert all(
             "days" in t.hovertemplate and "Normalized flux" in t.hovertemplate for t in screen.data
         )

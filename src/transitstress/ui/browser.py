@@ -26,9 +26,10 @@ LIMITATIONS = (
 
 
 OVERLAP_EXPLANATION = (
-    "Most points overlap because they are unchanged outside the artificial "
-    "transits. The large background variations are not the inserted signal. "
-    "Zoom in to inspect the small differences."
+    "Yellow is drawn on top of cyan. Outside artificial transits, yellow covers "
+    "the unchanged cyan points. During dimming, cyan stays at the prepared "
+    "brightness while yellow appears lower. The large background variations "
+    "are not the inserted signal. Zoom in to inspect the differences."
 )
 
 
@@ -328,7 +329,7 @@ def saved_chart_controls(cid: str, arrays: dict, bounds: list) -> None:
         )
     elif view == "Prepared & injected":
         st.write(
-            "White open circles show the prepared telescope background; yellow dots show "
+            "Cyan dots show the prepared telescope background; yellow dots show "
             "the same timestamps after artificial dimming. Axes show days and normalized "
             "flux (relative brightness)."
         )
@@ -382,7 +383,7 @@ def detail(bundle: DemoBundle, cid: str) -> None:
             )
             st.write(
                 "**Normalized flux** is brightness divided by a reference level: 1 is that "
-                "level; 0.999 is 0.1% fainter. Each soft off-white dot is a retained 10-minute "
+                "level; 0.999 is 0.1% fainter. Each yellow dot is a retained 10-minute "
                 "measurement. Time is in days from the recorded starting epoch."
             )
             figure = timeline(arrays, "Prepared & injected", bounds)
@@ -415,7 +416,7 @@ def detail(bundle: DemoBundle, cid: str) -> None:
                 "as something passes in front of a star."
             )
             st.write(
-                "White open circles show the prepared background; yellow dots show the "
+                "Cyan dots show the prepared background; yellow dots show the "
                 "same observations with artificial dimming. Axes show days and "
                 "dimensionless normalized flux. Notice the shared gaps: adding a signal "
                 "does not create missing observations."
