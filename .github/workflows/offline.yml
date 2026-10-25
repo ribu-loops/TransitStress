@@ -18,13 +18,15 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
       UV_PYTHON: "3.12.15"
       UV_MANAGED_PYTHON: "1"
-      UV_PYTHON_INSTALL_DIR: ${{ runner.temp }}/transitstress-python
     steps:
       - name: Checkout (v5.1.0; Node24)
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           persist-credentials: false
           fetch-depth: 1
+      - name: Set managed Python directory
+        shell: bash
+        run: printf 'UV_PYTHON_INSTALL_DIR=%s/transitstress-python\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Install uv (action v10.3.2; Node24; verified tool archive)
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e
         with:
