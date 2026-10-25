@@ -36,5 +36,6 @@ caching. Managed Python uses a fresh runner-temporary installation directory
 and UV_MANAGED_PYTHON requirement so an older runner interpreter cannot satisfy the pin.
 Checkout v5.1.0 and setup-uv v10.3.2 declare Node24 and are pinned by commit.
 Setup uses explicit per-platform uv archive checksums and no activated environment.
-Hosted execution and actual runner patch receipts remain pending; Linux local
-checks do not establish native Windows support or G4 approval.
+Hosted offline CI passed on Ubuntu 24.04 and Windows 2022 at workflow commit
+[247b2e7](https://github.com/ribu-loops/TransitStress/actions/runs/40217523662).
+That result does not certify desktop/browser behaviour or a different toolchain.

@@ -1,91 +1,127 @@
 # TransitStress
 
-**How do processing choices and missing observations affect an artificial transit signal?**
+Explore how processing choices and missing observations affect recovery of
+artificial transit signals inserted into real TESS telescope measurements.
 
-TransitStress inserts artificial box-shaped dips into prepared TESS light curves,
-then compares two rolling-median detrending configurations: A / 0.5 days and
-B / 1.5 days. Astropy supplies the blind Box Least Squares search. The project's
-contribution is paired orchestration, bounded validation, provenance and an
-offline guided browser. Synthetic injections are experiments, not planet discoveries.
+[Live demo](https://transit-stress.streamlit.app/) · [Quick start](#quick-start) · [Methods](docs/public/METHODS.md)
 
-The historical frozen evaluation contains **five evaluation stars, 135 injection
-cases, two detrending configurations and paired processing** (390 rows including
-controls). Exact period-and-timing matches were **79/135 for A and 74/135 for B**;
-median paired depth retention was 0.8144 and 0.9732. All 135 cases were eligible;
-zero technical errors were observed in that evaluation. Scientific misses remain
-in the denominators. Read [methods and limits](docs/public/METHODS.md),
-[all saved rows](demo/t10/results.csv), and the labelled
-[public copy of the independent results review](demo/t10/T07.md).
+## What you can explore
 
-These correlated cases, simple boxes, convenience sample and limited gap patterns
-do not establish survey completeness or a generally superior method. BLS peaks
-and depth SNR are diagnostics, not confirmation or calibrated probabilities.
-Pi Mensae is a separate real known-signal sanity check.
+- Follow three saved worked examples through Observation, Artificial signal,
+  Compare, Interpret and Evidence, with light curves, trends and periodograms.
+- Filter the 390 saved result rows and download available evidence. Cases without
+  detailed arrays are clearly marked summary-only.
+- Run a bounded exploratory CSV comparison locally, in a separate mode with an
+  explicit Run action and Git-based provenance.
 
-**Local public candidate; not published or G4-approved.** DEP-R1 is independently
-closed. E-1 interactions/true 200% zoom, author visual acceptance and study,
-CI/action/tool advisory clearance and independent G4 remain open. Linux/Ubuntu
-WSL is the verified platform; native Windows and hosted CI are not passed.
-[Reproducibility and adverse outcomes](docs/public/REPRODUCIBILITY.md) distinguish
-historical evaluation, corrected source and the scoped one-case self-reproduction.
+Saved demo browsing uses precomputed results: it does not accept uploads or run
+new searches. Local CSV analysis is separate from the frozen evaluation.
 
-## Install and launch
+In the guided charts, yellow represents artificially injected observations and
+cyan shows the prepared background.
 
-Use Python **3.12** (tested 3.12.15) and uv **0.13.5** (verified official release). Extract the source
-distribution and open a terminal in its root. See the [toolchain setup](docs/public/TOOLCHAIN.md)
-for verified bootstrap and the same-version managed Python build. No API key,
-GPU or runtime AI is needed.
+## How the experiment works
 
-```sh
+**Real observations → known artificial dimming → two processing windows →
+compare recovered timing and retained depth.**
+
+Artificial box-shaped dips are added to prepared TESS light curves. Two
+rolling-median detrending configurations use windows of **0.5 days (A)** and
+**1.5 days (B)**. Astropy's Box Least Squares (BLS) search runs without the known
+injection settings; those settings are used only after the search to score
+period-and-timing recovery and measure retained depth. Gaps are not interpolated.
+
+The worked examples show why retaining more depth and selecting the intended
+strongest periodogram peak can be different outcomes.
+
+## Results and limitations
+
+The historical frozen evaluation contains **135 correlated injection cases
+across five evaluation stars**, with every case processed by both configurations.
+These are paired cases, not 135 independent stars.
+
+| Detrending configuration | Exact period-and-timing matches |
+| --- | ---: |
+| A: 0.5-day window | 79 / 135 |
+| B: 1.5-day window | 74 / 135 |
+
+All 135 cases were eligible, and scientific misses remain in the denominators.
+The full 390-row bundle also includes real-background and Gaussian-null controls.
+See the [saved rows](demo/t10/results.csv), [evaluation record](demo/t10/T07.md)
+and [methods and limits](docs/public/METHODS.md).
+
+Five stars, correlated repetitions, simple box signals, limited gap patterns
+and upstream TESS processing constrain interpretation. This is not a survey
+completeness estimate or evidence that one method is generally superior.
+BLS peaks and depth SNR are diagnostics, not planet confirmation or calibrated
+probabilities. Pi Mensae is a separate known-signal sanity check.
+
+### Release status
+
+Initial local release acceptance passed under amended criteria: accepted
+technical and scoped visual evidence plus author-reported presentation and
+browser-zoom checks. Additional independent live-browser observations remain
+deferred; accessibility certification and author mastery are not established.
+
+[Hosted Ubuntu 24.04 and Windows 2022 CI passed](https://github.com/ribu-loops/TransitStress/actions/runs/40217523662)
+at workflow commit [`247b2e7`](https://github.com/ribu-loops/TransitStress/commit/247b2e7621b2ad8fdaac812425c7496e25e98639).
+This is hosted check evidence, not a new scientific evaluation or external human
+validation. Hosted availability and browser observations are author-reported;
+independent hosted-browser and download verification remain outstanding.
+
+## Quick start
+
+Install Git and follow the [toolchain guidance](docs/public/TOOLCHAIN.md) for
+**Python 3.12.15** and **uv 0.13.5**, including the repaired managed Python build.
+Use uv for installation; the locked pip is not cleared for network access.
+No API key, GPU or runtime AI is required.
+
+In a Linux or Ubuntu WSL shell:
+
+```bash
+git clone https://github.com/ribu-loops/TransitStress.git
+cd TransitStress
 uv sync --locked --python 3.12.15
 uv run --locked --offline --no-sync python -m transitstress doctor
 TRANSITSTRESS_MODE=demo uv run --locked --offline --no-sync streamlit run app.py --server.address 127.0.0.1 --server.headless true
 ```
 
-Open the loopback URL printed by Streamlit; stop with Ctrl+C. Installation normally
-needs downloads unless Python and locked dependencies are cached; use
-`uv sync --locked --offline --python 3.12.15` when cached. Saved demo browsing
-needs no network or owner cache. The wheel is the library/CLI; the source archive
-contains the dashboard, native configuration and required precomputed assets.
-Ordinary wheel requirements enforce the reviewed security floors; exact
-reproduction uses the lock. See [usage](docs/public/USAGE.md) and
-[distribution boundaries](docs/public/DISTRIBUTION.md).
+Open the local address printed by Streamlit; stop with Ctrl+C. Initial setup
+normally downloads Python/dependencies unless compatible caches are complete.
+After setup, saved-demo browsing needs neither network access nor the original
+prepared-data cache.
 
-## Explore
+The dashboard needs the source tree and bundled assets; the wheel alone contains
+the library/CLI. A source archive can browse saved examples, but fresh CSV Run
+requires a Git checkout with a real commit. Development built-ins additionally
+need the original prepared cache, which is not distributed.
 
-1. From Start choose **Explore a worked example**.
-2. Follow Observation → Artificial signal → Compare → Interpret → Evidence.
-   Yellow artificially injected observations and cyan prepared background share
-   scales. The selected disagreement shows that retaining more depth and finding
-   the intended strongest peak are different outcomes.
-3. Download saved evidence or browse all 390 rows. Three evaluation cases have
-   detailed arrays; others are explicitly summary-only. Navigation never runs science.
+For CSV columns, limits and the separate local-mode launch command, read the
+[usage guide](docs/public/USAGE.md). The included
+[synthetic CSV sample](examples/synthetic_constant.csv) is not a TESS measurement.
 
-Local CSV computation is an advanced separate mode with explicit Run and requires
-a Git checkout with a real current commit for provenance. The extracted source
-distribution supports the saved demo; it has no Git history. See
-[usage and input limits](docs/public/USAGE.md) and the
-[synthetic sample](examples/synthetic_constant.csv). Built-ins need the original
-prepared cache, which is not distributed. Saved demo startup does not need it.
+## Methods, data and credits
 
-## Rights and contribution
+- [Methods and scientific limitations](docs/public/METHODS.md)
+- [Historical reproducibility and adverse outcomes](docs/public/REPRODUCIBILITY.md)
+- [Distribution notes: pre-publication snapshot](docs/public/DISTRIBUTION.md)
+- [TESS/MAST and software attribution](docs/ATTRIBUTION.md) · [Third-party notices](NOTICE)
 
-Original code/documentation retain the approved [MIT license](LICENSE).
-TESS/MAST data, derived arrays and dependencies retain their separate rights:
-[NOTICE](NOTICE) and [attribution](docs/ATTRIBUTION.md).
-There was substantial AI assistance and model review; neither establishes human
-validation, author understanding or institutional endorsement.
-[Contribution disclosure](CONTRIBUTIONS.md).
+Original implementation and documentation use the [MIT license](LICENSE).
+TESS/MAST products, derived arrays and dependencies retain their separate rights.
 
-## Development history
+OpenAI Codex assistants materially assisted planning, implementation, tests,
+debugging, documentation and model reviews. Model review is not independent
+human scientific validation or institutional endorsement. See the
+[AI-assistance and contribution disclosure](CONTRIBUTIONS.md).
 
-Development history was filtered to remove private operational material.
-Original development timestamps are retained. Some historical commits have no
-public diff after private material was removed; they remain genuine development
-events. Historical revisions can retain their original bugs and missing private
-files; they are not all claimed runnable.
+### Development history
 
-Original scientific producing hashes remain historical provenance references;
-rewritten public hashes do not claim to have produced those experiments. The
-original freeze tag is retained privately and is not published or recreated.
-This local preparation does not approve G4 or authorize publication.
+Public history was privacy-filtered while preserving genuine development events
+and original timestamps. Some retained commits have no public diff; earlier
+revisions can retain bugs or require excluded private files and are not all
+claimed runnable.
+
+Scientific producing hashes remain historical provenance references; rewritten
+public hashes do not claim to have produced those experiments. The original
+freeze tag remains private and is not published or recreated.

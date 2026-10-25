@@ -58,7 +58,7 @@ def test_four_destinations_known_signal_and_offline_demo():
     next(b for b in at.button if b.label == "Reset to full baseline").click().run()
     assert at.slider[0].value[0] == 0
     at.sidebar.radio[0].set_value("Methods").run()
-    assert not at.exception and any("G3" in m.value for m in at.markdown)
+    assert not at.exception and any("Saved experiments" in m.value for m in at.markdown)
     assert any("750 ppm" in m.value for m in at.markdown)
     at.sidebar.radio[0].set_value("Workbench").run()
     assert not at.exception and isinstance(at.slider[0].value, tuple)

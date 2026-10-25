@@ -43,13 +43,17 @@ Current packaging keeps every resolved package version and adds ordinary wheel
 security floors; it does not authorize historical resume.
 
 The dark/gold guided UI is retained. UI-1/original UI-2 are closed; UI-3 is closed
-at caption-only scope. E-1 remaining interactions and true 200% browser zoom,
-author visual acceptance, deferred/unassessed author study, current CI/action/tool
-advisories and independent G4 remain open. Native Windows execution is unavailable,
-not passed; hosted Ubuntu/Windows CI and public URL checks await separately
-authorized publication. No published repository, PyPI release or hosted service
-is claimed. These limits prevent treating a usable local candidate as a completed
-public release.
+at caption-only scope. Initial local release acceptance subsequently passed under
+amended criteria using existing technical/scoped visual evidence and author-reported
+presentation/browser-zoom checks. Additional independent browser observations remain
+deferred; author study/understanding remain deferred/unassessed.
+
+Hosted Ubuntu 24.04 and Windows 2022 CI passed at workflow commit
+[247b2e7](https://github.com/ribu-loops/TransitStress/actions/runs/40217523662).
+The author reports the public demo linked from the [README](../../README.md);
+independent hosted-browser/download verification is not established here. No PyPI
+release is claimed. These current-status updates do not rewrite the historical
+results, adverse outcomes or original reviews above, or constitute a fresh audit.
 
 Candidate-boundary verification exposed an existing requirement: fresh local
 CSV computation records Git execution provenance. An extracted sdist with no .git

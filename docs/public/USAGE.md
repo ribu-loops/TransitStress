@@ -45,8 +45,7 @@ recorded in the source lock, not guaranteed by an unconstrained future resolver.
 For optional local CSV analysis, use a Git checkout with a real current commit,
 then launch separately from its root. Current computation records Git execution
 provenance: an extracted sdist without .git cannot perform Run comparison.
-The public saved demo and exports have no such requirement. This candidate does
-not create a public Git repository or fabricate development commits:
+The public saved demo and exports have no such requirement. Launch local mode separately:
 
 ```sh
 TRANSITSTRESS_MODE=local uv run --locked --offline --no-sync streamlit run app.py --server.address 127.0.0.1 --server.headless true

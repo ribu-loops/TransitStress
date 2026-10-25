@@ -1,6 +1,7 @@
 # Public-source inclusion and publication policy
 
-This local candidate is prepared for review, not published or approved by G4.
+This document records the reviewed public-source inclusion boundary. See the
+[README](../../README.md#release-status) for current acceptance, CI and hosted-demo scope.
 
 The source snapshot and sdist include application source, app.py, native Streamlit
 configuration, pinned build metadata/lock/Python selection, scientific configs,
@@ -46,7 +47,7 @@ proposal. It does not propose publishing the original operational lineage or
 original G2 tag. Earlier revisions can retain original bugs or require excluded
 private files and are not all claimed runnable.
 
-Preparation and scoped independent review are local. G4 and separate publication
-authorization remain required; nothing has been pushed, hosted or deployed by
-this preparation. Any later authorized transfer must contain only the reviewed
-public branch, excluding private evidence, original refs/tags and raw .git storage.
+Preparation and scoped independent review were local operations. Subsequent
+authorized publication and hosted CI are summarized in the README; this policy
+does not authorize further transfers. Any future transfer must contain only the
+reviewed public branch, excluding private evidence, original refs/tags and raw .git storage.

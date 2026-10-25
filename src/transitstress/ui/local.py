@@ -291,7 +291,7 @@ def main() -> None:
         reference.main()
         return
     st.set_page_config(page_title="TransitStress · local workbench", layout="centered")
-    st.caption("ADVANCED LOCAL ANALYSIS · EXPLORATORY · G4 PENDING")
+    st.caption("ADVANCED LOCAL ANALYSIS · EXPLORATORY")
     st.title("Advanced local workbench")
     st.write(
         "Compare two detrending configurations on a signal deliberately added to a light curve."

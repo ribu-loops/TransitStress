@@ -876,8 +876,8 @@ def methods(bundle: DemoBundle) -> None:
         "AI assistance: implementation, explanations and builder checks were prepared "
         "with coding-assistant help. Author learning and independent reviews are "
         "separate evidence; no author understanding is inferred. T07 results-only review "
-        "is preserved. Historical combined Linux G3 is accepted; this presentation revision "
-        "awaits separate review and author visual feedback. G4 remains pending."
+        "is preserved. Saved experiments can be explored without running a fresh search; "
+        "compatible CSV analysis uses the local Workbench."
     )
     st.subheader("Offline inspection and local reproduction")
     st.code(
@@ -889,10 +889,9 @@ def methods(bundle: DemoBundle) -> None:
     )
     st.caption(
         "The demo is self-contained. The last command requires the original run restored "
-        "locally. Scoped assistant-performed V5 reproduction is recorded separately; "
-        "native Windows proof remains unavailable. Python DEP-R1 is CLOSED. "
-        "Release-tool changed-surface review, publication and G4 holds remain. No release "
-        "or deployment is approved. Browsing time measures navigation, not scientific computation."
+        "locally. Scoped assistant-performed V5 reproduction is recorded separately. "
+        "Use the local Workbench for your own compatible CSV light curve; see the setup guide. "
+        "Browsing time measures navigation, not scientific computation."
     )
 
 
@@ -915,8 +914,9 @@ def main() -> None:
         st.stop()
     st.sidebar.caption("Data: complete packaged bundle validated · offline · precomputed")
     st.sidebar.caption(
-        "Presentation revision: visual feedback and independent review pending. "
-        "Python DEP-R1 is CLOSED. Tool review, publication and G4 holds remain."
+        "Explore saved experiments here. To analyse your own compatible CSV light curve, "
+        "run the Workbench locally; see the "
+        "[setup guide](https://github.com/ribu-loops/TransitStress/blob/main/docs/public/USAGE.md)."
     )
 
     if destination == "Start":

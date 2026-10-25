@@ -216,6 +216,7 @@ def main() -> None:
         "Real backgrounds are not verified negatives; no calibrated false-alarm rate."
     )
     st.caption(
-        "T08 R1 reference approved by the author. G3/G4 pending. "
-        "Local exploratory controls and evidence export require local mode."
+        "Precomputed development reference. To analyse your own compatible CSV light curve, "
+        "use the local Workbench. Local exploratory controls and evidence export require local "
+        "mode."
     )
