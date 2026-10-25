@@ -26,6 +26,6 @@ Before a later authorized release, the author must explain the equations, truth
 isolation, denominators and one observed failure. Study remains deferred/unassessed.
 Private assistant-prepared suggestions are not the author's answers.
 
-Development uses one writer, preserved failures and independent gates. The public
-snapshot omits internal operational instructions; its provenance and limitations
+Development uses one writer, preserved failures and independent gates. The publication
+copy omits private operational material; its provenance and limitations
 are explained in docs/public/REPRODUCIBILITY.md. No push/deployment/outreach is implied.

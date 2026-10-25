@@ -75,3 +75,16 @@ TESS/MAST data, derived arrays and dependencies retain their separate rights:
 There was substantial AI assistance and model review; neither establishes human
 validation, author understanding or institutional endorsement.
 [Contribution disclosure](CONTRIBUTIONS.md).
+
+## Development history
+
+Development history was filtered to remove private operational material.
+Original development timestamps are retained. Some historical commits have no
+public diff after private material was removed; they remain genuine development
+events. Historical revisions can retain their original bugs and missing private
+files; they are not all claimed runnable.
+
+Original scientific producing hashes remain historical provenance references;
+rewritten public hashes do not claim to have produced those experiments. The
+original freeze tag is retained privately and is not published or recreated.
+This local preparation does not approve G4 or authorize publication.
