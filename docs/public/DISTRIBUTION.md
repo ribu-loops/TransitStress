@@ -31,18 +31,22 @@ The source-root dashboard/assets are in the sdist; install the source for the
 application. Dependencies are separately installed with their own notices;
 original MIT terms do not relicense TESS data, derived arrays or dependencies.
 
-A clean snapshot does not make the existing branch safe to push. The proposed
-current branch and historical G2 tag reach personal workstation paths, operational
-records and session material. .gitignore cannot remove those historical blobs.
-Git publication remains HELD. No existing refs/history/timestamps were changed.
+This candidate contains privacy-filtered development history, preserving genuine
+development events and their original timestamps. Commit hashes changed through
+filtering. Some preserved historical events have no public file changes after
+private material was removed; these remain genuine development events.
 
-Concrete proposal, requiring author disposition and independent review: publish
-the inspected snapshot as a clearly labelled release snapshot with a new, honest
-publication-time initial commit in a separate repository, explicitly disclose
-that it is an export of the preserved private development history, and retain
-the public outcome/provenance summaries. Do not fabricate development history or
-claim this has already been approved. This is a proposed exception to the current
-plan's authentic-history push sequence and needs an explicit plan disposition.
-Alternative: publish the existing lineage only after explicit review/consent for
-all identified personal/operational history; the snapshot scan alone is insufficient.
-No history rewrite, force-push, ref deletion or publication is part of this work.
+The original private development history and original scientific freeze tag
+remain private. Historical scientific producing hashes remain provenance
+references; the rewritten public commits do not claim to have produced those
+experiments. The original freeze tag is not included or recreated.
+
+This filtered-history candidate replaces the earlier one-commit release-snapshot
+proposal. It does not propose publishing the original operational lineage or
+original G2 tag. Earlier revisions can retain original bugs or require excluded
+private files and are not all claimed runnable.
+
+Preparation and scoped independent review are local. G4 and separate publication
+authorization remain required; nothing has been pushed, hosted or deployed by
+this preparation. Any later authorized transfer must contain only the reviewed
+public branch, excluding private evidence, original refs/tags and raw .git storage.

@@ -55,8 +55,9 @@ reproduction uses the lock. See [usage](docs/public/USAGE.md) and
 
 1. From Start choose **Explore a worked example**.
 2. Follow Observation → Artificial signal → Compare → Interpret → Evidence.
-   White A and gold B share scales. The selected disagreement shows that retaining
-   more depth and finding the intended strongest peak are different outcomes.
+   Yellow artificially injected observations and cyan prepared background share
+   scales. The selected disagreement shows that retaining more depth and finding
+   the intended strongest peak are different outcomes.
 3. Download saved evidence or browse all 390 rows. Three evaluation cases have
    detailed arrays; others are explicitly summary-only. Navigation never runs science.
 
